@@ -2,6 +2,7 @@ import numpy as np
 import pickle
 #import matplotlib.pyplot as plt
 from basicAnalysis import dataForRace
+from basicAnalysisLoop import loopDataforRace
 import pandas as pd
 #import sys
 #np.set_printoptions(threshold=sys.maxsize)
@@ -20,7 +21,8 @@ import pandas as pd
 
 #1a
 
-def dataForLinRegModel(fileArr, posKeyArr, tagArr, raceMin, raceMax, currArr):
+def dataForLinRegModel(fileArr, includeLoop, posKeyArr=['Pos', 'Rank', 'Rank'], tagArr=['race', 'prac', 'qual'],
+                        currArr=[False, True, True], raceMin=11, raceMax=22, **kwargs):
     #create y dataframe
     y = pd.DataFrame()
     with open(fileArr[0], 'rb') as f:
@@ -44,17 +46,37 @@ def dataForLinRegModel(fileArr, posKeyArr, tagArr, raceMin, raceMax, currArr):
             typeX['Driver'] = typeX['Driver']+'_'+str(race)
             typeX.columns = [col +tagArr[i] if col!='Driver' else col for col in typeX.columns]
             typeX['Driver'] = typeX['Driver'].str.strip()
-            #print(typeX)
             if tmpX.empty:
                 tmpX = tmpX._append(typeX)
-                
             else:
                 #print(i, "\n", typeX.dtypes, "\n", tmpX.dtypes)
                 tmpX = pd.merge(tmpX, typeX, on = 'Driver', how='inner')
             
-        #print(tmpX['Driver'].unique())
+        if includeLoop:
+            fileName = kwargs.get('loopFile')
+            if fileName == None:
+                print("Need loop file name")
+                break
+            includeCurr = kwargs.get('includeCurr', False)
+            colsToKeep = kwargs.get('colsToKeep', ["Prev10"])
+            typeX = loopDataforRace(fileName, race, includeCurr)
+            #print(typeX)
+            typeX['Driver'] = typeX['Driver']+'_'+str(race)
+            typeX.columns = [col +'loop' if col!='Driver' else col for col in typeX.columns]
+            typeX['Driver'] = typeX['Driver'].str.strip()
+            colsToKeep.append('Driver')
+            regex_pattern = '|'.join([f"({col})" for col in colsToKeep])
+            typeX = typeX.filter(regex=regex_pattern)
+            if tmpX.empty:
+                print("Should not reach here")
+                tmpX = tmpX._append(typeX)
+            else:
+                #print(i, "\n", typeX.dtypes, "\n", tmpX.dtypes)
+                tmpX = pd.merge(tmpX, typeX, on = 'Driver', how='inner')
         X = X._append(tmpX[tmpX['Driver'].isin(y['Driver'])])
+        print("Race ", race, "imported")
     y = y[y['Driver'].isin(X['Driver'])]
+
     return [X, y]
         
 
