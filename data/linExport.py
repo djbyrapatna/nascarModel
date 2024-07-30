@@ -1,6 +1,7 @@
 import pickle
 from linRegModelSetup import dataForLinRegModel
 from sklearn.model_selection import train_test_split
+import pandas as pd
 
 def createTestTrain(X, y, **kwargs):
     unique_values = X['Driver'].unique()
@@ -12,22 +13,30 @@ def createTestTrain(X, y, **kwargs):
     X_test = (X[X['Driver'].isin(unique_test)].sort_values('Driver')).drop('Driver', axis=1)
     y_train = (y[y['Driver'].isin(unique_train)].sort_values('Driver')).drop('Driver', axis=1)
     y_test = (y[y['Driver'].isin(unique_test)].sort_values('Driver')).drop('Driver', axis=1)
-    retArr = [X_train, X_test, y_train, y_test]
+    dataArr = [X_train, X_test, y_train, y_test]
+    cols = X_train.columns
+    retArr = []
     if scale:
         from sklearn.preprocessing import MinMaxScaler
         from sklearn.preprocessing import StandardScaler
         scaler = None
         if (scale != "minMaxScale" and scale != "zScale"):
             print("Scaling method not recognized. No scaling applied")
-            return retArr
+            return dataArr
         elif scale == "minMaxScale":
             scaler = MinMaxScaler()
         else:
             scaler = StandardScaler()
-        for df in retArr:
-            df = scaler.fit_transform(df)
-    
-    return retArr
+        for i in range(0,2):
+            #print(dataArr[i])
+            df = scaler.fit_transform(dataArr[i])
+            df = pd.DataFrame(df, columns = cols)
+            retArr.append(df)
+        retArr.append(y_train)
+        retArr.append(y_test)
+        return retArr
+    else:
+        return dataArr
 
 def importXy(xFileName, yFileName):
     with open(xFileName,'rb') as f:
@@ -40,9 +49,9 @@ def importXy(xFileName, yFileName):
 
 def dataForLinRegModelExport(fileArr, includeLoop, exportX, exportY, posKeyArr=['Pos', 'Rank', 'Rank'], tagArr=['race', 'prac', 'qual'],
                         currArr=[False, True, True], raceMin=11, raceMax=22, **kwargs):
-    fileArr = ["/Users/dhruvajb/Documents/Prog Personal/nascar/nascarModel/data/racingref/rdata.pkl", 
-            "/Users/dhruvajb/Documents/Prog Personal/nascar/nascarModel/data/racingref/pdata.pkl",
-            "/Users/dhruvajb/Documents/Prog Personal/nascar/nascarModel/data/racingref/qdata.pkl"]
+    # fileArr = ["/Users/dhruvajb/Documents/Prog Personal/nascar/nascarModel/data/racingref/rdata.pkl", 
+    #         "/Users/dhruvajb/Documents/Prog Personal/nascar/nascarModel/data/racingref/pdata.pkl",
+    #         "/Users/dhruvajb/Documents/Prog Personal/nascar/nascarModel/data/racingref/qdata.pkl"]
     fileName="racingref/ldata.pkl"
     includeCurr = False
     colsToKeep = ["Prev10"]
@@ -63,3 +72,11 @@ def dataForLinRegModelExport(fileArr, includeLoop, exportX, exportY, posKeyArr=[
     with open(exportY, 'wb') as f:
         pickle.dump(y, f)
     f.close()
+
+def filterXy(dataArr, colList):
+    regex_pattern = '|'.join([f"^{col}$" for col in colList])
+    retArr = []
+    for i in range(len(dataArr)):
+        df =dataArr[i].filter(regex=regex_pattern)
+        retArr.append(df)
+    return retArr

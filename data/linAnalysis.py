@@ -33,8 +33,11 @@ def linReg(X_train, X_test, y_train, y_test, model):
     plt.plot(X_test['PrevAllrace'], y_pred, color = 'red', linestyle = "", marker = "o")
     plt.show()
 
-X, y = importXy("compiledDataX.pkl", "compiledDataY.pkl")
+def linAnalysisRun(xFile, yFile, scale, model):
+    X, y = importXy("compiledDataX.pkl", "compiledDataY.pkl")
+    #print(X.columns)
+    X_train, X_test, y_train, y_test = createTestTrain(X,y, scale = "zScale")
 
-X_train, X_test, y_train, y_test = createTestTrain(X,y)
+    #print(X_train.columns)
 
-linReg(X_train, X_test, y_train, y_test, Ridge())
+    linReg(X_train, X_test, y_train, y_test, Ridge())

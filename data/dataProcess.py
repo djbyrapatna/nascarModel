@@ -38,11 +38,7 @@ for k in range(1,4):
     dataFile = files[k]
     df = pd.read_excel(dataFile, sheet_name = None)
 
-    # for i in range(len(df.keys())):
-    #     key = list(df.keys())[i]
-    #     print (df[key].cokl
-    #     df[key].columns = df['Sheet7'].columns
-    
+ 
     keyList= list(df.keys())
     j = 1
     for key in keyList:
