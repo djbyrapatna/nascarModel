@@ -51,7 +51,7 @@ for k in range(1,4):
         df[newName] = df.pop(key)
         j+=1
     testStr = sheetNames[k]+str(4)+"_24"
-    print(df[424])
+    
     pklFile = 'racingref/'+dataFile[10:15]+'.pkl'
     with open(pklFile, 'wb') as f:
         pickle.dump(df, f)

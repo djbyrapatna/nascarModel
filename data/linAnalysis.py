@@ -1,54 +1,40 @@
-import numpy as np 
-import pickle
 import pandas as pd
-from linRegModelSetup import dataForLinRegModel
-from sklearn.model_selection import train_test_split
+from linExport import createTestTrain, importXy
+import matplotlib.pyplot as plt
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.linear_model import LinearRegression, Ridge
 
 import warnings
 warnings.filterwarnings("ignore")
 
-def createTestTrain(X, y):
-    unique_values = X['Driver'].unique()
-    # Split unique values into training and testing sets
-    unique_train, unique_test = train_test_split(unique_values, test_size=0.2)
-    # Use the splits to subset both X and y
-    X_train = (X[X['Driver'].isin(unique_train)].sort_values('Driver')).drop('Driver', axis=1)
-    X_test = (X[X['Driver'].isin(unique_test)].sort_values('Driver')).drop('Driver', axis=1)
-    y_train = (y[y['Driver'].isin(unique_train)].sort_values('Driver')).drop('Driver', axis=1)
-    y_test = (y[y['Driver'].isin(unique_test)].sort_values('Driver')).drop('Driver', axis=1)
-    return X_train, X_test, y_train, y_test
+def linReg(X_train, X_test, y_train, y_test, model):
+    model = Ridge()
+    model.fit(X_train,y_train)
+    y_pred = model.predict(X_test)
 
+    mse = mean_squared_error(y_test, y_pred)
+    r2 = r2_score(y_test, y_pred)
 
-fileArr = ["/Users/dhruvajb/Documents/Prog Personal/nascar/nascarModel/data/racingref/rdata.pkl", 
-           "/Users/dhruvajb/Documents/Prog Personal/nascar/nascarModel/data/racingref/pdata.pkl",
-           "/Users/dhruvajb/Documents/Prog Personal/nascar/nascarModel/data/racingref/qdata.pkl"]
+    coefficients = model.coef_
 
-raceMin = 15
-raceMax = 22
-posKeyArr = ['Pos', 'Rank', 'Rank']
-currArr = [False, True, True]
-tagArr = ['race','prac','qual']
+    # Create a DataFrame to display the coefficients alongside feature names
+    coeff_df = pd.DataFrame({'Feature': X_train.columns, 'Coefficient': coefficients.flatten()})
+    coeff_df['Absolute Coefficient'] = coeff_df['Coefficient'].abs()
 
-X, y = dataForLinRegModel(fileArr, posKeyArr, tagArr, raceMin,raceMax,currArr)
+    # Sort the DataFrame by the absolute value of the coefficients
+    coeff_df = coeff_df.sort_values(by='Absolute Coefficient', ascending=False)
+
+    print(coeff_df)
+
+    print(f'Mean Squared Error: {mse}')
+    print(f'R-squared: {r2}')
+
+    plt.plot(X_test['PrevAllrace'], y_test, color = 'blue', linestyle = "", marker = "o")
+    plt.plot(X_test['PrevAllrace'], y_pred, color = 'red', linestyle = "", marker = "o")
+    plt.show()
+
+X, y = importXy("compiledDataX.pkl", "compiledDataY.pkl")
 
 X_train, X_test, y_train, y_test = createTestTrain(X,y)
 
-#print(X_train, y_train)
-
-from sklearn.linear_model import LinearRegression
-
-model = LinearRegression()
-#X_train= X_train.filter(['Currqual'])
-#X_test =X_test.filter(['Currqual'])
-model.fit(X_train,y_train)
-
-y_pred = model.predict(X_test)
-
-from sklearn.metrics import mean_squared_error, r2_score
-
-mse = mean_squared_error(y_test, y_pred)
-r2 = r2_score(y_test, y_pred)
-print(model.coef_)
-
-print(f'Mean Squared Error: {mse}')
-print(f'R-squared: {r2}')
+linReg(X_train, X_test, y_train, y_test, Ridge())
