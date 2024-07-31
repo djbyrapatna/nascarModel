@@ -17,11 +17,13 @@ polyColList = ['Prevrace','Prev10race','Currqual','Currprac','Prev10DRIVERRATING
 model = LogisticRegression()
 cutOffArray = [1,3,5,10,20]
 
-resultArr = logRegRun("compiledDataX.pkl", "compiledDataY.pkl",cutOffArray, metrics=True, probs = True)
+resultArr = logRegRun("compiledDataX.pkl", "compiledDataY.pkl",cutOffArray, modelType='svm', scale = 'zScale',metrics=True, probs = True)
 printArr = ['Accuracy', 'Precision', 'Recall', 'F1']
 
 for i in range(len(resultArr)):
     result = resultArr[i]
+    yprob = result[1]
+    #print(yprob)
     metricsArray = result[2]
     print("Metrics for Cutoff Position "+str(cutOffArray[i])+ ":")
     for j in range(len(metricsArray)):
