@@ -4,6 +4,8 @@ from polyAnalysis import createPolyX
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from sklearn.preprocessing import LabelEncoder, PolynomialFeatures
+from sklearn.ensemble import RandomForestClassifier
+import xgboost as xgb
 
 def logRegSplits(xFile, yFile):
     X, y = importXy(xFile, yFile)
@@ -51,12 +53,17 @@ def logReg(X_train, X_test, y_train, y_test, model, metrics=False, probs=False):
         y_prob = model.predict_proba(X_test)
     return [testArr, y_prob, metArr]
 
-def logRegRun(xFile, yFile, cutOffArray, polyModel = False, degree=2, colList = None, metrics=False, probs=False):
+def logRegRun(xFile, yFile, cutOffArray, modelType='log', polyModel = False, degree=2, colList = None, metrics=False, probs=False):
     X_train, X_test, y_train, y_test = logRegSplits(xFile, yFile)
     yArr = logRegSetup(y_train, y_test, cutOffArray)
     #print(len(yArr))
     retArr = []
     model = LogisticRegression()
+    if modelType=='randomforest':
+        model = RandomForestClassifier()
+    elif modelType =='xgBoost':
+        model = xgb.XGBClassifier()
+        
     if polyModel:
         a,b = filterXy([X_train, X_test], colList)
         X_train, X_test = createPolyX(X_train, X_test, degree=degree)
