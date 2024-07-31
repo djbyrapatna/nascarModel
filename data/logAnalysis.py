@@ -1,8 +1,9 @@
 import pandas as pd
-from linExport import createTestTrain, importXy
+from linExport import createTestTrain, importXy, filterXy
+from polyAnalysis import createPolyX
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, PolynomialFeatures
 
 def logRegSplits(xFile, yFile):
     X, y = importXy(xFile, yFile)
@@ -50,12 +51,15 @@ def logReg(X_train, X_test, y_train, y_test, model, metrics=False, probs=False):
         y_prob = model.predict_proba(X_test)
     return [testArr, y_prob, metArr]
 
-def logRegRun(xFile, yFile, cutOffArray, metrics=False, probs=False):
+def logRegRun(xFile, yFile, cutOffArray, polyModel = False, degree=2, colList = None, metrics=False, probs=False):
     X_train, X_test, y_train, y_test = logRegSplits(xFile, yFile)
     yArr = logRegSetup(y_train, y_test, cutOffArray)
     #print(len(yArr))
     retArr = []
     model = LogisticRegression()
+    if polyModel:
+        a,b = filterXy([X_train, X_test], colList)
+        X_train, X_test = createPolyX(X_train, X_test, degree=degree)
     for i in range(len(cutOffArray)):
         ret = logReg(X_train, X_test, yArr[i][0], yArr[i][1], model, metrics=metrics, probs=probs)
         retArr.append(ret)

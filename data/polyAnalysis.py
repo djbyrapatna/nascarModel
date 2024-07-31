@@ -6,6 +6,13 @@ from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.metrics import mean_squared_error, r2_score
 
+def createPolyX(X_train, X_test, degree=2):
+    poly = PolynomialFeatures(degree=degree, include_bias=False)
+
+    X_train_poly = poly.fit_transform(X_train)
+    X_test_poly = poly.fit_transform(X_test)
+    return X_train_poly, X_test_poly
+
 
 def polyReg(X_train, X_test, y_train, y_test, poly, model, graphCol=None, plot = False, printOption=False):
     X_train_poly = poly.fit_transform(X_train)
