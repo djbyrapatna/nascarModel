@@ -5,3 +5,9 @@ data/racingref/ldata.xlsm
 data/racingref/pdata.xlsm
 data/racingref/rdata.xlsm
 data/racingref/qdata.xlsm
+data/check.xlsx
+data/checky.xlsx
+.gitignore
+data/compiledDatax.pkl
+data/compiledDatay.pkl
+data/racingref/qdata.pkl
