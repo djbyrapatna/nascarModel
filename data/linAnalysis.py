@@ -7,8 +7,8 @@ from sklearn.linear_model import LinearRegression, Ridge
 import warnings
 warnings.filterwarnings("ignore")
 
-def linReg(X_train, X_test, y_train, y_test, model):
-    model = Ridge()
+def linReg(X_train, X_test, y_train, y_test, model, plot = False, printOption=False):
+    #model = Ridge()
     model.fit(X_train,y_train)
     y_pred = model.predict(X_test)
 
@@ -23,21 +23,38 @@ def linReg(X_train, X_test, y_train, y_test, model):
 
     # Sort the DataFrame by the absolute value of the coefficients
     coeff_df = coeff_df.sort_values(by='Absolute Coefficient', ascending=False)
+    if printOption:
+        print(coeff_df)
 
-    print(coeff_df)
+        print(f'Mean Squared Error: {mse}')
+        print(f'R-squared: {r2}')
+    if plot:
+        plt.plot(X_test['PrevAllrace'], y_test, color = 'blue', linestyle = "", marker = "o")
+        plt.plot(X_test['PrevAllrace'], y_pred, color = 'red', linestyle = "", marker = "o")
+        plt.show()
+    return coeff_df
 
-    print(f'Mean Squared Error: {mse}')
-    print(f'R-squared: {r2}')
-
-    plt.plot(X_test['PrevAllrace'], y_test, color = 'blue', linestyle = "", marker = "o")
-    plt.plot(X_test['PrevAllrace'], y_pred, color = 'red', linestyle = "", marker = "o")
-    plt.show()
-
-def linAnalysisRun(xFile, yFile, scale, model):
-    X, y = importXy("compiledDataX.pkl", "compiledDataY.pkl")
+def linAnalysisRun(xFile, yFile, model, scale = None, plot=False):
+    X, y = importXy(xFile, yFile)
     #print(X.columns)
-    X_train, X_test, y_train, y_test = createTestTrain(X,y, scale = "zScale")
+    X_train, X_test, y_train, y_test = createTestTrain(X,y, scale = scale)
 
     #print(X_train.columns)
 
-    linReg(X_train, X_test, y_train, y_test, Ridge())
+    return linReg(X_train, X_test, y_train, y_test, model, plot)
+
+from sklearn.feature_selection import RFE
+
+def linFeatureRanking(xFile, yFile, model, scale = None, features=5):
+    X, y = importXy(xFile, yFile)
+    #print(X.columns)
+    X_train, X_test, y_train, y_test = createTestTrain(X,y, scale = scale)
+    selector = RFE(model, n_features_to_select=features, step=1)
+    selector = selector.fit(X_train, y_train)
+
+    # Get the ranking of features
+    ranking = selector.ranking_
+    # Create a DataFrame to display the ranking alongside feature names
+    ranking_df = pd.DataFrame({'Feature': X_train.columns, 'Ranking': ranking})
+    ranking_df = ranking_df.sort_values(by='Ranking')
+    return ranking_df

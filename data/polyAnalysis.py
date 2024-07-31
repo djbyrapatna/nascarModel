@@ -6,46 +6,78 @@ from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.metrics import mean_squared_error, r2_score
 
-X, y = importXy("compiledDataX.pkl", "compiledDataY.pkl")
 
-colList = ['Prevrace','Prev10race','Currqual','Currprac','Prev10DRIVERRATINGloop','Prev10AvgPosloop']
-X_train_unfiltered, X_test_unfiltered, y_train, y_test =createTestTrain(X,y)
+def polyReg(X_train, X_test, y_train, y_test, poly, model, graphCol=None, plot = False, printOption=False):
+    X_train_poly = poly.fit_transform(X_train)
+    X_test_poly = poly.fit_transform(X_test)    
+    model.fit(X_train_poly,y_train)
+    y_pred = model.predict(X_test_poly)
 
-X_train, X_test = filterXy([X_train_unfiltered, X_test_unfiltered],colList)
+    mse = mean_squared_error(y_test, y_pred)
+    r2 = r2_score(y_test, y_pred)
 
-degree = 2
+    coefficients = model.coef_
+    feature_names = poly.get_feature_names_out(X_train.columns)
+    print (len(feature_names), len(coefficients.flatten()))
+    # Create a DataFrame to display the coefficients alongside feature names
+    coeff_df = pd.DataFrame({'Feature': feature_names, 'Coefficient': coefficients.flatten()})
+    coeff_df['Absolute Coefficient'] = coeff_df['Coefficient'].abs()
 
-poly = PolynomialFeatures(degree=degree, include_bias=False)
+    # Sort the DataFrame by the absolute value of the coefficients
+    coeff_df = coeff_df.sort_values(by='Absolute Coefficient', ascending=False)
+    if printOption:
+        print(coeff_df)
 
-X_train_poly = poly.fit_transform(X_train)
-X_test_poly = poly.fit_transform(X_test)
+        print(f'Mean Squared Error: {mse}')
+        print(f'R-squared: {r2}')
+    
+    if plot:
+        if not graphCol:
+            graphCol = X_train.columns[0]
+        plt.plot(X_test[graphCol], y_test, color = 'blue', linestyle = "", marker = "o")
+        plt.plot(X_test[graphCol], y_pred, color = 'red', linestyle = "", marker = "o")
+        plt.show()
+    return coeff_df
 
-model = LinearRegression()
+def polyRegRun(xFile, yFile, model, colList, scale = None, graphCol = None, plot=False, degree=2):
+    X, y = importXy(xFile,yFile)
 
-model.fit(X_train_poly,y_train)
-y_pred = model.predict(X_test_poly)
+    #colList = ['Prevrace','Prev10race','Currqual','Currprac','Prev10DRIVERRATINGloop','Prev10AvgPosloop']
+    X_train_unfiltered, X_test_unfiltered, y_train, y_test =createTestTrain(X,y,scale=scale)
 
-mse = mean_squared_error(y_test, y_pred)
-r2 = r2_score(y_test, y_pred)
+    X_train, X_test = filterXy([X_train_unfiltered, X_test_unfiltered],colList)
 
-coefficients = model.coef_
-feature_names = poly.get_feature_names_out(X_train.columns)
-print (len(feature_names), len(coefficients.flatten()))
-# Create a DataFrame to display the coefficients alongside feature names
-coeff_df = pd.DataFrame({'Feature': feature_names, 'Coefficient': coefficients.flatten()})
-coeff_df['Absolute Coefficient'] = coeff_df['Coefficient'].abs()
+    poly = PolynomialFeatures(degree=degree, include_bias=False)
 
-# Sort the DataFrame by the absolute value of the coefficients
-coeff_df = coeff_df.sort_values(by='Absolute Coefficient', ascending=False)
+    X_train_poly = poly.fit_transform(X_train)
+    X_test_poly = poly.fit_transform(X_test)
 
-print(coeff_df)
+    return polyReg(X_train, X_test, y_train, y_test, poly, model, graphCol)
 
-print(f'Mean Squared Error: {mse}')
-print(f'R-squared: {r2}')
+from sklearn.feature_selection import RFE
 
-plt.plot(X_test['Prev10race'], y_test, color = 'blue', linestyle = "", marker = "o")
-plt.plot(X_test['Prev10race'], y_pred, color = 'red', linestyle = "", marker = "o")
-plt.show()
+def polyFeatureRanking(xFile, yFile, model, colList, scale = None, degree=2, features = 5):
+    X, y = importXy(xFile, yFile)
+    X_train_unfiltered, X_test_unfiltered, y_train, y_test =createTestTrain(X,y,scale=scale)
+    X_train, X_test = filterXy([X_train_unfiltered, X_test_unfiltered],colList)
+    
+    poly = PolynomialFeatures(degree=degree, include_bias=False)
+    X_train_poly = poly.fit_transform(X_train)
+    X_test_poly = poly.fit_transform(X_test)
+
+    selector = RFE(model, n_features_to_select=features, step=1)
+    selector = selector.fit(X_train_poly, y_train)
+    # Get the ranking of features
+    ranking = selector.ranking_
+    # Create a DataFrame to display the ranking alongside feature names
+    feature_names = poly.get_feature_names_out(X_train.columns)
+    ranking_df = pd.DataFrame({'Feature': feature_names, 'Ranking': ranking})
+    ranking_df = ranking_df.sort_values(by='Ranking')
+
+    return ranking_df
+    
+
+
 
 
 
