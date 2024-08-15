@@ -1,5 +1,6 @@
 import pandas as pd
 from linExport import createTestTrain, importXy, filterXy
+from linAnalysis import cleanTotal
 from polyAnalysis import createPolyX
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
@@ -10,8 +11,10 @@ from sklearn.utils.class_weight import compute_class_weight
 import numpy as np
 import xgboost as xgb
 
-def logRegSplits(xFile, yFile,scale=None):
+def logRegSplits(xFile, yFile,scale=None, clean=False):
     X, y = importXy(xFile, yFile)
+    if clean:
+        X, y = cleanTotal(X,y)
     X_train, X_test, y_train, y_test = createTestTrain(X,y, scale = scale)
     return  X_train, X_test, y_train, y_test
 
@@ -56,8 +59,8 @@ def logReg(X_train, X_test, y_train, y_test, model, metrics=False, probs=False):
         y_prob = model.predict_proba(X_test)
     return [testArr, y_prob, metArr]
 
-def logRegRun(xFile, yFile, cutOffArray, modelType='log', scale = None,polyModel = False, degree=2, colList = None, metrics=False, probs=False):
-    X_train, X_test, y_train, y_test = logRegSplits(xFile, yFile,scale=scale)
+def logRegRun(xFile, yFile, cutOffArray, modelType='log', scale = None,polyModel = False, degree=2, colList = None, metrics=False, probs=False, clean=False):
+    X_train, X_test, y_train, y_test = logRegSplits(xFile, yFile,scale=scale, clean=clean)
     yArr = logRegSetup(y_train, y_test, cutOffArray)
     #print(len(yArr))
     retArr = []

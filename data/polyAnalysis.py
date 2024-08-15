@@ -1,6 +1,6 @@
 import pandas as pd
 from linExport import createTestTrain, importXy, filterXy
-from linAnalysis import linReg
+from linAnalysis import linReg, cleanTotal
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression, Ridge
@@ -32,6 +32,7 @@ def polyReg(X_train, X_test, y_train, y_test, poly, model, graphCol=None, plot =
 
     # Sort the DataFrame by the absolute value of the coefficients
     coeff_df = coeff_df.sort_values(by='Absolute Coefficient', ascending=False)
+
     if printOption:
         print(coeff_df)
 
@@ -46,8 +47,11 @@ def polyReg(X_train, X_test, y_train, y_test, poly, model, graphCol=None, plot =
         plt.show()
     return coeff_df
 
-def polyRegRun(xFile, yFile, model, colList, scale = None, graphCol = None, plot=False, degree=2):
+def polyRegRun(xFile, yFile, model, colList, scale = None, graphCol = None, plot=False, degree=2, clean=False, printOption=False):
     X, y = importXy(xFile,yFile)
+
+    if clean:
+        X, y= cleanTotal(X,y)
 
     #colList = ['Prevrace','Prev10race','Currqual','Currprac','Prev10DRIVERRATINGloop','Prev10AvgPosloop']
     X_train_unfiltered, X_test_unfiltered, y_train, y_test =createTestTrain(X,y,scale=scale)
@@ -59,12 +63,14 @@ def polyRegRun(xFile, yFile, model, colList, scale = None, graphCol = None, plot
     X_train_poly = poly.fit_transform(X_train)
     X_test_poly = poly.fit_transform(X_test)
 
-    return polyReg(X_train, X_test, y_train, y_test, poly, model, graphCol)
+    return polyReg(X_train, X_test, y_train, y_test, poly, model, graphCol, plot, printOption)
 
 from sklearn.feature_selection import RFE
 
-def polyFeatureRanking(xFile, yFile, model, colList, scale = None, degree=2, features = 5):
+def polyFeatureRanking(xFile, yFile, model, colList, scale = None, degree=2, features = 5, clean=False):
     X, y = importXy(xFile, yFile)
+    if clean:
+        X, y= cleanTotal(X,y)
     X_train_unfiltered, X_test_unfiltered, y_train, y_test =createTestTrain(X,y,scale=scale)
     X_train, X_test = filterXy([X_train_unfiltered, X_test_unfiltered],colList)
     

@@ -4,31 +4,66 @@ from polyAnalysis import polyRegRun, polyFeatureRanking
 from linAnalysis import linAnalysisRun, linFeatureRanking
 from logAnalysis import logRegRun
 from statistics import fmean
+from linExport import importXy
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_colwidth', None)
 
-# model = LinearRegression()
+# X, y = importXy("racingref/compiledDataXtotal.pkl", "racingref/compiledDataytotal.pkl" )
+
+# not_in_Y = X[~X['Driver'].isin(y['Driver'])]['Driver']
+# duplicates = X[X['Driver'].duplicated(keep=False)]
+# X.iloc[:, 1:-5] = X.iloc[:, 1:-5].apply(lambda x: pd.to_numeric(x, errors='coerce')).astype('float64')
+# column_types = X.dtypes
+# print(column_types)
+# numBlanks = X.isnull().any(axis=1).sum()
+# print(numBlanks)
+#model = LinearRegression()
 polyColList = ['Prevrace','Prev10race','Currqual','Currprac','Prev10DRIVERRATINGloop','Prev10AvgPosloop']
-# linAnalysisRun("compiledDataX.pkl", "compiledDataY.pkl",model)
+#coeff_df= linAnalysisRun("racingref/compiledDataXtotal.pkl", "racingref/compiledDataytotal.pkl",model, clean=True, printOption=True)
 
-# polyRegRun("compiledDataX.pkl", "compiledDataY.pkl",model,polyColList)
 
-# print(linFeatureRanking("compiledDataX.pkl", "compiledDataY.pkl",model))
-# print(polyFeatureRanking("compiledDataX.pkl", "compiledDataY.pkl", model, polyColList, features=7))
+#coeff_df=polyRegRun("racingref/compiledDataXtotal.pkl", "racingref/compiledDataytotal.pkl",model,polyColList,  clean=True,printOption=True)
+# print("\n\n\nLin Features -------------------------------")
+# print(linFeatureRanking("racingref/compiledDataXtotal.pkl", "racingref/compiledDataytotal.pkl",model, features = 15, clean=True))
+#print(polyFeatureRanking("racingref/compiledDataXtotal.pkl", "racingref/compiledDataytotal.pkl", model, polyColList, features=7, clean=True))
 
 model = LogisticRegression()
 cutOffArray = [1,3,5,10,20]
 
-resultArr = logRegRun("compiledDataX.pkl", "compiledDataY.pkl",cutOffArray, modelType='svm', scale = 'zScale',metrics=True, probs = True)
+resultArr = logRegRun("racingref/compiledDataXtotal.pkl", "racingref/compiledDataytotal.pkl",
+                      cutOffArray, modelType='log', scale = None,metrics=True, probs = True, clean=True)
 printArr = ['Accuracy', 'Precision', 'Recall', 'F1']
 
-for i in range(len(resultArr)):
-    result = resultArr[i]
-    yprob = result[1]
-    #print(yprob)
-    metricsArray = result[2]
-    print("Metrics for Cutoff Position "+str(cutOffArray[i])+ ":")
-    for j in range(len(metricsArray)):
-        print(printArr[j]+ ": "+ str(metricsArray[j]))
 
+
+modelTypeAndScale = [['log', None], ['randomforest', None], ['xgboost', None], ['svm', 'zScale']]
+
+n = len(cutOffArray)
+
+res = [[]*n for _ in range(4)]
+
+for j in range(len(modelTypeAndScale)):
+    ms = modelTypeAndScale[j]
+    m, s = ms
+    print(m)
+    precArray = [[] for _ in range(n)]
+    for a in range(20):
+        if (a+1)%5==0:
+            print("Iteration ", a+1)
+        resultArr = logRegRun("racingref/compiledDataXtotal.pkl", "racingref/compiledDataytotal.pkl",
+                        cutOffArray, modelType=m, scale = s,metrics=True, probs = True, clean=True)
+        numCutoffs = len(resultArr)
+        for i in range(len(resultArr)):
+            result = resultArr[i]
+            yprob = result[1]
+            metricsArray = result[2]
+            precArray[i].append(metricsArray[1])
+    for i in range(len(precArray)):
+        mean = fmean(precArray[i])
+        res[j].append(mean)
+
+print(res)
 
 # precArrLin = []
 # recallArrLin = []

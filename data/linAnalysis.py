@@ -7,6 +7,19 @@ from sklearn.linear_model import LinearRegression, Ridge
 import warnings
 warnings.filterwarnings("ignore")
 
+def cleanTotal(X, y):
+    X = X.drop_duplicates()
+
+    X = X.dropna()
+    y = y[y['Driver'].isin(X['Driver'])]
+
+    
+    X.iloc[:, 1:-5] = X.iloc[:, 1:-5].apply(lambda x: pd.to_numeric(x, errors='coerce')).astype('float64')
+    X = X.iloc[:, :-6]
+    X = X.drop(columns=['Yearrace', 'Yearprac', 'Yearloop', 'Yearqual'])
+    return X,y
+
+
 def linReg(X_train, X_test, y_train, y_test, model, plot = False, printOption=False):
     #model = Ridge()
     model.fit(X_train,y_train)
@@ -34,20 +47,24 @@ def linReg(X_train, X_test, y_train, y_test, model, plot = False, printOption=Fa
         plt.show()
     return coeff_df
 
-def linAnalysisRun(xFile, yFile, model, scale = None, plot=False):
+def linAnalysisRun(xFile, yFile, model, scale = None, plot=False, clean = False, printOption=False):
     X, y = importXy(xFile, yFile)
-    #print(X.columns)
+    
+    if clean:
+       X, y = cleanTotal(X,y)
+
     X_train, X_test, y_train, y_test = createTestTrain(X,y, scale = scale)
 
     #print(X_train.columns)
 
-    return linReg(X_train, X_test, y_train, y_test, model, plot)
+    return linReg(X_train, X_test, y_train, y_test, model, plot, printOption=True)
 
 from sklearn.feature_selection import RFE
 
-def linFeatureRanking(xFile, yFile, model, scale = None, features=5):
+def linFeatureRanking(xFile, yFile, model, scale = None, features=5, clean=True):
     X, y = importXy(xFile, yFile)
-    #print(X.columns)
+    if clean:
+        X, y = cleanTotal(X,y)
     X_train, X_test, y_train, y_test = createTestTrain(X,y, scale = scale)
     selector = RFE(model, n_features_to_select=features, step=1)
     selector = selector.fit(X_train, y_train)

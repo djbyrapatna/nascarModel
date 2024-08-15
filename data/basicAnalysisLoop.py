@@ -9,23 +9,26 @@ from statistics import fmean
 # Fastest Lap	Top 15 Laps	Pct. Top 15 Laps	
 # Laps Led	Pct. Laps Led	Total Laps	DRIVER RATING
 
-def loopDataforRace(fileName, raceNum, includeCurr):
+def loopDataforRace(fileName, race, yr, includeCurr):
+    raceKey = race*100 +(yr%100)
     with open(fileName,'rb') as f:
         dfRace = pickle.load(f)
     f.close()
     colList = list(dfRace[224].columns)[6:]
-    driverList = dfRace[124]['Driver']
+    driverList = dfRace[raceKey]['Driver']
     retArr = pd.DataFrame()
     for colName in colList:
         posKey = colName
         colName = colName.replace(" ", '').replace(".",'')
-        avgStatArray = pd.DataFrame(columns=["Driver", "Prev"+colName, "Prev3"+colName, "Prev5"+colName, "Prev10"+colName, "PrevAll"+colName])
+        avgStatArray = pd.DataFrame(columns=["Driver", "Year","Prev"+colName, "Prev3"+colName, "Prev5"+colName, "Prev10"+colName, "PrevAll"+colName])
         for driver in driverList:
             statArray = []
-            #loop thru races in data set
-            for i in range(raceNum,0,-1):
+            startRange = race
+            if not includeCurr:
+                startRange -=1
+            for i in range(startRange,0,-1):
                 #get specific dataframe corresponding to race
-                key = i*100+24
+                key = i*100 +(yr%100)
                 d = dfRace[key]
                 #find row of data corresponding to driver
                 if not d.empty:
@@ -37,7 +40,7 @@ def loopDataforRace(fileName, raceNum, includeCurr):
             numRaces = len(statArray)
             if numRaces >=10:
                 #calculate and append the previous finish, the average finish over the last 3, 5, 10, and total season races
-                dfAdd = [driver]
+                dfAdd = [driver,yr]
                 dfAdd.append(statArray[0])
                 if numRaces >=3:
                     prev3 = fmean(statArray[0:3])
@@ -62,7 +65,7 @@ def loopDataforRace(fileName, raceNum, includeCurr):
             retArr = retArr._append(avgStatArray)
         else:
             #print(i, "\n", typeX.dtypes, "\n", tmpX.dtypes)
-            retArr = pd.merge(retArr, avgStatArray, on = 'Driver', how='inner')
+            retArr = pd.merge(retArr, avgStatArray, on = ['Driver','Year'], how='inner')
     return retArr
 
 

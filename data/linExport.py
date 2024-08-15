@@ -49,9 +49,6 @@ def importXy(xFileName, yFileName):
 
 def dataForLinRegModelExport(fileArr, includeLoop, exportX, exportY, posKeyArr=['Pos', 'Rank', 'Rank'], tagArr=['race', 'prac', 'qual'],
                         currArr=[False, True, True], raceMin=11, raceMax=22, **kwargs):
-    # fileArr = ["/Users/dhruvajb/Documents/Prog Personal/nascar/nascarModel/data/racingref/rdata.pkl", 
-    #         "/Users/dhruvajb/Documents/Prog Personal/nascar/nascarModel/data/racingref/pdata.pkl",
-    #         "/Users/dhruvajb/Documents/Prog Personal/nascar/nascarModel/data/racingref/qdata.pkl"]
     fileName="racingref/ldata.pkl"
     includeCurr = False
     colsToKeep = ["Prev10"]
@@ -80,3 +77,5 @@ def filterXy(dataArr, colList):
         df =dataArr[i].filter(regex=regex_pattern)
         retArr.append(df)
     return retArr
+
+# dataForLinRegModelExport()
