@@ -10,9 +10,7 @@ def dataForRace(fileName, posKey, raceNum, includeCurr):
     with open(fileName, 'rb') as f:
         dfRace = pickle.load(f)
     f.close()
-    # if raceNum==22:
-    #     print (dfRace[raceKey])
-    #get driver list
+    
     driverList = dfRace[raceKey]['Driver']
     if includeCurr:
         avgFinishes = pd.DataFrame(columns=["Driver", "Curr", "Prev", "Prev3", "Prev5", "Prev10", "PrevAll"])
