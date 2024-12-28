@@ -13,3 +13,4 @@ data/compiledDatay.pkl
 data/racingref/qdata.pkl
 
 data/racingref/qdata.pkl
+**/*.log
