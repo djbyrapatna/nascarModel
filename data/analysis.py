@@ -8,8 +8,11 @@ from linExport import importXy
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_colwidth', None)
+import numpy as np
 
-# X, y = importXy("racingref/compiledDataXtotal.pkl", "racingref/compiledDataytotal.pkl" )
+float_formatter = "{:.4f}".format
+np.set_printoptions(formatter={'float_kind':float_formatter})
+# X, y = importXy("racingref/formodel/compiledDataX.pkl", "racingref/formodel/compiledDatay.pkl" )
 
 # not_in_Y = X[~X['Driver'].isin(y['Driver'])]['Driver']
 # duplicates = X[X['Driver'].duplicated(keep=False)]
@@ -31,27 +34,28 @@ polyColList = ['Prevrace','Prev10race','Currqual','Currprac','Prev10DRIVERRATING
 model = LogisticRegression()
 cutOffArray = [1,3,5,10,20]
 
-resultArr = logRegRun("racingref/compiledDataXtotal.pkl", "racingref/compiledDataytotal.pkl",
-                      cutOffArray, modelType='log', scale = None,metrics=True, probs = True, clean=True)
+# resultArr = logRegRun("racingref/forModel/compiledDataX.pkl", "racingref/forModel/compiledDataY.pkl",
+#                       cutOffArray, modelType='log', scale = None,metrics=True, probs = True, clean=True)
 printArr = ['Accuracy', 'Precision', 'Recall', 'F1']
 
 
 
-modelTypeAndScale = [['log', None], ['randomforest', None], ['xgboost', None], ['svm', 'zScale']]
+modelTypeAndScale = [['log', None]]
 
 n = len(cutOffArray)
 
-res = [[]*n for _ in range(4)]
+res = [[]*n for _ in range(len(modelTypeAndScale))]
 
 for j in range(len(modelTypeAndScale)):
     ms = modelTypeAndScale[j]
     m, s = ms
     print(m)
+    print(printArr)
     precArray = [[] for _ in range(n)]
     for a in range(20):
         if (a+1)%5==0:
             print("Iteration ", a+1)
-        resultArr = logRegRun("racingref/compiledDataXtotal.pkl", "racingref/compiledDataytotal.pkl",
+        resultArr = logRegRun("racingref/formodel/compiledDataX.pkl", "racingref/formodel/compiledDataY.pkl",
                         cutOffArray, modelType=m, scale = s,metrics=True, probs = True, clean=True)
         numCutoffs = len(resultArr)
         for i in range(len(resultArr)):
@@ -59,6 +63,7 @@ for j in range(len(modelTypeAndScale)):
             yprob = result[1]
             metricsArray = result[2]
             precArray[i].append(metricsArray[1])
+            print(metricsArray, f" Cutoff: {cutOffArray[i]}")
     for i in range(len(precArray)):
         mean = fmean(precArray[i])
         res[j].append(mean)

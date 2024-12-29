@@ -8,15 +8,23 @@ import warnings
 warnings.filterwarnings("ignore")
 
 def cleanTotal(X, y):
+    columns_to_drop = X.filter(like='prac').columns
+
+    # Drop the selected columns
+    X = X.drop(columns=columns_to_drop)
+    
     X = X.drop_duplicates()
 
     X = X.dropna()
     y = y[y['Driver'].isin(X['Driver'])]
-
-    
     X.iloc[:, 1:-5] = X.iloc[:, 1:-5].apply(lambda x: pd.to_numeric(x, errors='coerce')).astype('float64')
+    
+    
     X = X.iloc[:, :-6]
-    X = X.drop(columns=['Yearrace', 'Yearprac', 'Yearloop', 'Yearqual'])
+    X = X.drop(columns=['Yearrace', 'Yearloop', 'Yearqual'])
+    X = X.drop(columns = ['Track',	'Type',	'Manufacturer'	,'Team',	'Teammates'])
+    X = X.drop(columns=['Finish'])
+    
     return X,y
 
 

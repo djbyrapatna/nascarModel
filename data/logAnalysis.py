@@ -13,8 +13,11 @@ import xgboost as xgb
 
 def logRegSplits(xFile, yFile,scale=None, clean=False):
     X, y = importXy(xFile, yFile)
+    X.to_excel("compareX.xlsx")
     if clean:
         X, y = cleanTotal(X,y)
+    X.to_excel("checkCleanX.xlsx")
+    y.to_excel("checkCleanY.xlsx")
     X_train, X_test, y_train, y_test = createTestTrain(X,y, scale = scale)
     return  X_train, X_test, y_train, y_test
 
