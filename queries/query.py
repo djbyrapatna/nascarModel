@@ -33,6 +33,8 @@ _practiceStr = "practice-results/"
 _qualStr = "qual-results/"
 _raceStr = "race-results/"
 
+_nonNumericColumns = ['Driver', 'Sponsor/Owner', 'Car', 'Status', 'Time']
+
 #Generates URL's for racing reference practice, qualifiying, loop date
 #and race data pages given year and race number range
 def urlGen(yrmin, yrmax, raceMin, raceMax, splitByType=True):
@@ -86,10 +88,27 @@ def fetchRaceData(url, removeCertainRaceData=False):
         tables = pd.read_html(html)
         #ensures at least 4 tables have loaded (stats table is always 4th)
         if len(tables) > 4:
-            trimmed = tables[4].iloc[2:].reset_index(drop=True)
-            trimmed.columns = trimmed.iloc[0]      # Set column headers from the first row
-            trimmed = trimmed[1:].reset_index(drop=True)  # Remove the header row and reset index
+            trimmed = tables[4]
+            if _loopStr in url:
+                trimmed = trimmed.iloc[2:]
+            elif _practiceStr in url:
+                trimmed = trimmed.iloc[1:]
+            elif _qualStr in url:
+                trimmed = trimmed.iloc[1:]
+                trimmed = trimmed.iloc[:,:-1]
+            if _raceStr not in url:
+                trimmed = trimmed.reset_index(drop=True)
+                trimmed.columns = trimmed.iloc[0]  
+                trimmed = trimmed[1:].reset_index(drop=True)  # Remove the header row and reset index
+            
+            for col in trimmed.columns:
+                if col not in _nonNumericColumns:
+                     trimmed[col] = pd.to_numeric(trimmed[col], errors='coerce')
+
+
+            #print(trimmed)
             if removeCertainRaceData:
+                #print(trimmed)
                 trimmed=trimmed.drop(columns=['Sponsor / Owner', "Pts", "PPts"])
                 trimmed.dropna(inplace=True)
             return trimmed
@@ -100,14 +119,14 @@ def fetchRaceData(url, removeCertainRaceData=False):
         logging.error(f"Error fetching {url}: {e}")
         return None
 
-def compileDataset(urls, existingDatasetPath=None, max_workers=8):
+def compileDataset(urls, existingDatasetPath=None, max_workers=8, removeCertainRaceData=False):
     #attempts to open existing dataset for appending, creates clean dataset if none exists
     #returns and logs error if the filename is invalid
     if existingDatasetPath:
         try:
             with open(existingDatasetPath, 'rb') as f:
                 masterDf = pickle.load(f)
-                print(type(masterDf))
+                #print(type(masterDf))
         
         except FileNotFoundError:
             masterDf = {}
@@ -121,7 +140,10 @@ def compileDataset(urls, existingDatasetPath=None, max_workers=8):
     dataType = None
     for url in urls:
         parts = url.rstrip('/').split('/')
-        raceInfo = parts[-2].split('-')
+        if parts[-1]=='1':
+            raceInfo = parts[-3].split('-')
+        else:
+            raceInfo = parts[-2].split('-')
         if not dataType:
             dataType=parts[-3]
         
@@ -135,7 +157,7 @@ def compileDataset(urls, existingDatasetPath=None, max_workers=8):
 
     #creates fetchRaceData job for each key/url pair in stasks
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_to_url = {executor.submit(fetchRaceData, url): (keyNum) for keyNum, url in tasks}
+        future_to_url = {executor.submit(fetchRaceData, url, removeCertainRaceData): (keyNum) for keyNum, url in tasks}
         
         for future in as_completed(future_to_url):
             keyNum = future_to_url[future]
@@ -150,15 +172,14 @@ def compileDataset(urls, existingDatasetPath=None, max_workers=8):
                     logging.info(f"Appended record for {dataType}, {keyNum}.")
                 else:
                     logging.warning(f"Failed to fetch data for {dataType}, {keyNum}.")
+                    #print(f"Failed to fetch data for {dataType}, {keyNum}.")
             except Exception as e:
                 logging.error(f"Exception for {dataType}, {keyNum}: {e}")
     
     return masterDf
 
 
-urlGroupTest = urlGen(2024,2024,22,36)
 
-testDf = compileDataset(urlGroupTest[0],existingDatasetPath="../data/racingref/ldatatotal.pkl")
-print(testDf.keys())
-print(testDf[1824])
-print(testDf[3124])
+
+
+

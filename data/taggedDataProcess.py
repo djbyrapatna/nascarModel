@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import pickle
 
-df = pd.read_excel("racingref/taggedData.xlsx", sheet_name = None)
+df = pd.read_excel("racingref/taggedData2.xlsx", sheet_name = None)
 
 years = df["Teams"]['Year'].unique()
 
@@ -18,7 +18,7 @@ def add_teammates_column(df):
 
 df['Teams'] = add_teammates_column(df['Teams'])
 
-fileArr = ['racingref/trackDataTagged.pkl', "racingref/teamDatatagged.pkl"]
+fileArr = ['racingref/trackDataTagged2.pkl', "racingref/teamDatatagged2.pkl"]
 
 with open(fileArr[0], 'wb') as f:
         pickle.dump(df['Tracks'], f)

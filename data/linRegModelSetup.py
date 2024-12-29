@@ -61,9 +61,8 @@ def dataForLinRegModel(fileArr, includeLoop=True, includeHistoric=False, include
     with open(fileArr[0], 'rb') as f:
         dfY = pickle.load(f)
     f.close()
+
     raceKeyArray = createRaceKeyArray(raceMin, raceMax, yrMin, yrMax)
-    print(raceKeyArray)
-    #create yData
     y = createY(dfY, raceKeyArray)
     
     if includeHistoric:
@@ -75,12 +74,13 @@ def dataForLinRegModel(fileArr, includeLoop=True, includeHistoric=False, include
                 hdf = pickle.load(f)
             dfH.append(hdf)
     if includeTagged:
-        taggedFile = "racingref/mainTagData.pkl"
+        taggedFile = "racingref/mainTagData2.pkl"
         with open(taggedFile, "rb") as f:
             dft = pickle.load(f)
 
     #create X dataframe
     X = pd.DataFrame()
+
     #now need to iterate thru races and add data
     
     for raceKey in raceKeyArray:
@@ -90,6 +90,7 @@ def dataForLinRegModel(fileArr, includeLoop=True, includeHistoric=False, include
         for i in range(len(fileArr)):
             fileName = fileArr[i]
             typeX = dataForRace(fileName, posKeyArr[i], raceNum, yr, currArr[i])
+            
             #This code block incorporates the historic data season averages into the dataframe
             if includeHistoric and yr!=2021:
                 hdf = dfH[i]
@@ -160,7 +161,8 @@ def dataForLinRegModel(fileArr, includeLoop=True, includeHistoric=False, include
             
             
             if tmpX.empty:
-                print("Should not reach here")
+                if raceNum>10:
+                    print("Should not reach here")
                 tmpX = tmpX._append(typeX)
             else:
                 #print(i, "\n", typeX.dtypes, "\n", tmpX.dtypes)
@@ -168,6 +170,9 @@ def dataForLinRegModel(fileArr, includeLoop=True, includeHistoric=False, include
         if includeTagged and not tmpX.empty:
             tmpX[['DriverName', 'Race', 'Year']] = tmpX['Driver'].str.split('_', expand=True)
             dft['Driver']= dft['Driver'].str.strip()
+            
+            # tmpX.to_excel(f'tmpxcheck{raceNum}.xlsx')
+            # dft.to_excel(f'dftcheck{raceNum}.xlsx')
             tmpX['Year'] = pd.to_numeric(tmpX['Year'])
             tmpX['Race'] = pd.to_numeric(tmpX['Race'])
             dft['Year'] = pd.to_numeric(dft['Year'])
@@ -184,21 +189,30 @@ def dataForLinRegModel(fileArr, includeLoop=True, includeHistoric=False, include
 
     return [X, y]
         
-# fileArr = ["racingref/rdatatotal.pkl","racingref/pdatatotal.pkl","racingref/qdatatotal.pkl"]
+fileArr = ["racingref/forModel/raceDataUntagged.pkl","racingref/forModel/pracDataUntagged.pkl","racingref/forModel/qualDataUntagged.pkl"]
 
-# X, y= dataForLinRegModel(fileArr, includeLoop=True, includeHistoric=True, includeTagged=True,
-#                        posKeyArr=['Pos', 'Rank', 'Rank'], tagArr=['race', 'prac', 'qual'],
-#                         currArr=[False, True, True], raceMin=1, raceMax=22, yrMin=2022, 
-#                         yrMax = 2024, loopFile = "racingref/ldatatotal.pkl")
+# with open(fileArr[0], 'rb') as f:
+#     df = pickle.load(f)
 
-# #print(X)
+# # print(df[2224])
+# # print(df[2324])
 
-# X.to_excel("Xcheck.xlsx")
-# y.to_excel("ycheck.xlsx")
 
-# pklFile = 'racingref/compiledDataXTotal.pkl'
-# with open(pklFile, 'wb') as f:
-#     pickle.dump(X, f)
-# pklFile = 'racingref/compiledDatayTotal.pkl'
-# with open(pklFile, 'wb') as f:
-#     pickle.dump(y, f)
+
+
+X, y= dataForLinRegModel(fileArr, includeLoop=True, includeHistoric=True, includeTagged=True,
+                       posKeyArr=['Pos', 'Rank', 'Rank'], tagArr=['race', 'prac', 'qual'],
+                        currArr=[False, True, True], raceMin=1, raceMax=36, yrMin=2021, 
+                        yrMax = 2024, loopFile = "racingref/forModel/loopDataUntagged.pkl")
+
+
+
+X.to_excel("Xcheck.xlsx")
+y.to_excel("ycheck.xlsx")
+
+pklFile = 'racingref/formodel/compiledDataX.pkl'
+with open(pklFile, 'wb') as f:
+    pickle.dump(X, f)
+pklFile = 'racingref/formodel/compiledDataY.pkl'
+with open(pklFile, 'wb') as f:
+    pickle.dump(y, f)

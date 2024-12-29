@@ -23,7 +23,7 @@ def dataForRace(fileName, posKey, race, yr, includeCurr):
     else:
         avgFinishes = pd.DataFrame(columns=["Driver", "Year","Prev", 
                                             "Prev3", "Prev5", "Prev10", "PrevAll"])
-
+    
     for driver in driverList:
         finishes = []
         curr = 0
@@ -35,11 +35,15 @@ def dataForRace(fileName, posKey, race, yr, includeCurr):
             #get specific dataframe corresponding to race
             key = i*100 +(yr%100)
             d = dfRace[key]
+            
 
             #find row of data corresponding to driver
             if not d.empty:
                 rowDf = d[d['Driver'] == driver]
             #if row exists, append finishes array
+            if rowDf.empty and isinstance(driver, str):
+                driverSpace = "  "+driver
+                rowDf = d[d['Driver'] == driverSpace]
             if not rowDf.empty:
                 if i == race:
                     curr = rowDf[posKey].tolist()[0]   
@@ -47,7 +51,8 @@ def dataForRace(fileName, posKey, race, yr, includeCurr):
                     finishes.append(rowDf[posKey].tolist()[0])
     
         numRaces = len(finishes)
-        
+        # if isinstance(driver, str):
+            #print(driver, len(driver))
         #calculate and append the previous finish, the average finish over the last 3, 5, 10, and total season races
   
         if numRaces>=10:
@@ -55,7 +60,7 @@ def dataForRace(fileName, posKey, race, yr, includeCurr):
             if includeCurr:
                 #print("here?")
                 dfAdd.append(curr)
-            
+            #print (finishes)
             #if numRaces>0:
             dfAdd.append(finishes[0])
             #if numRaces >=3:
@@ -76,7 +81,8 @@ def dataForRace(fileName, posKey, race, yr, includeCurr):
             dfAdd.append(fmean(finishes))
 
             avgFinishes.loc[len(avgFinishes)] = dfAdd
-   
+            
+    
     return avgFinishes
 
 def createSeasonData(fileName, posKey):

@@ -14,6 +14,7 @@ def loopDataforRace(fileName, race, yr, includeCurr):
     with open(fileName,'rb') as f:
         dfRace = pickle.load(f)
     f.close()
+    
     colList = list(dfRace[224].columns)[6:]
     driverList = dfRace[raceKey]['Driver']
     retArr = pd.DataFrame()
@@ -33,12 +34,15 @@ def loopDataforRace(fileName, race, yr, includeCurr):
                 #find row of data corresponding to driver
                 if not d.empty:
                     rowDf = d[d['Driver'] == driver]
+                    #print(rowDf)
                 #if row exists, append finish to statArray
                 if not rowDf.empty:
                     statArray.append(rowDf[posKey].tolist()[0])
             
             numRaces = len(statArray)
             if numRaces >=10:
+                
+                #print(statArray)
                 #calculate and append the previous finish, the average finish over the last 3, 5, 10, and total season races
                 dfAdd = [driver,yr]
                 dfAdd.append(statArray[0])
