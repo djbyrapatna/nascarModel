@@ -54,7 +54,7 @@ def createY(df, raceKeyArray):
         y = y._append(tmpY)
     return y    
 
-def dataForLinRegModel(fileArr, includeLoop=True, includeHistoric=False, includeTagged=False,
+def dataForLinRegModel(fileArr, includeLoop=True, includeHistoric=True, includeTagged=True,
                        posKeyArr=['Pos', 'Rank', 'Rank'], tagArr=['race', 'prac', 'qual'],
                         currArr=[False, True, True], raceMin=11, raceMax=22, yrMin=2024, yrMax = 2024, **kwargs):
     #create blank dataframe
@@ -66,15 +66,17 @@ def dataForLinRegModel(fileArr, includeLoop=True, includeHistoric=False, include
     y = createY(dfY, raceKeyArray)
     
     if includeHistoric:
-        historicFileArr = ["racingref/rdataSeasonAvg.pkl", "racingref/qdataSeasonAvg.pkl",
-                           "racingref/pdataSeasonAvg.pkl","racingref/ldataSeasonAvg.pkl",]
+        if 'historicFileArr' in kwargs:
+            historicFileArr = kwargs.get('historicFileArr')
         dfH = []
         for hFile in historicFileArr:
             with open(hFile, "rb") as f:
                 hdf = pickle.load(f)
             dfH.append(hdf)
     if includeTagged:
-        taggedFile = "racingref/mainTagData2.pkl"
+        if 'taggedFile' in kwargs:
+            taggedFile = kwargs.get('taggedFile')
+        
         with open(taggedFile, "rb") as f:
             dft = pickle.load(f)
 
@@ -197,22 +199,23 @@ fileArr = ["racingref/forModel/raceDataUntagged.pkl","racingref/forModel/pracDat
 # # print(df[2224])
 # # print(df[2324])
 
+historicFileArr = ["racingref/rdataSeasonAvg.pkl", "racingref/qdataSeasonAvg.pkl",
+                           "racingref/pdataSeasonAvg.pkl","racingref/ldataSeasonAvg.pkl",]
+
+taggedFile = "racingref/mainTagData2.pkl"
+# X, y= dataForLinRegModel(fileArr, includeLoop=True, includeHistoric=True, includeTagged=True,
+#                        posKeyArr=['Pos', 'Rank', 'Rank'], tagArr=['race', 'prac', 'qual'],
+#                         currArr=[False, True, True], raceMin=1, raceMax=36, yrMin=2021, 
+#                         yrMax = 2024, loopFile = "racingref/forModel/loopDataUntagged.pkl")
 
 
 
-X, y= dataForLinRegModel(fileArr, includeLoop=True, includeHistoric=True, includeTagged=True,
-                       posKeyArr=['Pos', 'Rank', 'Rank'], tagArr=['race', 'prac', 'qual'],
-                        currArr=[False, True, True], raceMin=1, raceMax=36, yrMin=2021, 
-                        yrMax = 2024, loopFile = "racingref/forModel/loopDataUntagged.pkl")
+# X.to_excel("Xcheck.xlsx")
+# y.to_excel("ycheck.xlsx")
 
-
-
-X.to_excel("Xcheck.xlsx")
-y.to_excel("ycheck.xlsx")
-
-pklFile = 'racingref/formodel/compiledDataX.pkl'
-with open(pklFile, 'wb') as f:
-    pickle.dump(X, f)
-pklFile = 'racingref/formodel/compiledDataY.pkl'
-with open(pklFile, 'wb') as f:
-    pickle.dump(y, f)
+# pklFile = 'racingref/formodel/compiledDataX.pkl'
+# with open(pklFile, 'wb') as f:
+#     pickle.dump(X, f)
+# pklFile = 'racingref/formodel/compiledDataY.pkl'
+# with open(pklFile, 'wb') as f:
+#     pickle.dump(y, f)

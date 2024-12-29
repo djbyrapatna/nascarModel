@@ -7,15 +7,15 @@ from linRegModelSetup import createRaceKeyArray
 #Have tagged data for 1. track and track type
 #2. Teammates and manufacturers
 #Let's see what we have so far first
-with open("racingref/teamDataTagged2.pkl", 'rb') as f:
-    dfTeam = pickle.load(f)
 
 
-with open("racingref/trackDataTagged2.pkl", 'rb') as f:
-    dfTrack = pickle.load(f)
 
-
-def createHelperDf(fileName, raceMin, raceMax, yearMin, yearMax ):
+def createHelperDf(fileName, raceMin, raceMax, yearMin, yearMax, fileArr):
+    teamFile, trackFile = fileArr
+    with open(teamFile, 'rb') as f:
+        dfTeam = pickle.load(f)
+    with open(trackFile, 'rb') as f:
+        dfTrack = pickle.load(f)
     raceKeyArray = createRaceKeyArray(raceMin, raceMax, yearMin, yearMax)
     H = pd.DataFrame(columns=["Driver", "Year", "Race", "Finish"])
     with open(fileName, 'rb') as f:
@@ -143,18 +143,18 @@ def createMainDf(fileName):
     return M
 
 
-H = createHelperDf('racingref/forModel/raceDataUntagged.pkl',1, 36, 2021, 2024 )
-with open('racingref/helperTag2.pkl', 'wb') as f:
-    pickle.dump(H,f)
+# H = createHelperDf('racingref/forModel/raceDataUntagged.pkl',1, 36, 2021, 2024, ['racingref/trackDataTagged2.pkl', "racingref/teamDatatagged2.pkl"])
+# with open('racingref/helperTag2.pkl', 'wb') as f:
+#     pickle.dump(H,f)
 
 
-M = createMainDf("racingref/helperTag2.pkl")
+# M = createMainDf("racingref/helperTag2.pkl")
 
-pklFile = 'racingref/mainTagData2.pkl'
-with open(pklFile, 'wb') as f:
-    pickle.dump(M, f)
+# pklFile = 'racingref/mainTagData2.pkl'
+# with open(pklFile, 'wb') as f:
+#     pickle.dump(M, f)
 
-M.to_excel("tagDataCheck2.xlsx")
+# M.to_excel("tagDataCheck2.xlsx")
 #df structure:
 #Driver Year Race PrevFinishAtTrack AvgFinishAtTrack AvgFinishAtTrackType ManufacturerPrevSzn TeamPrevSzn TeamAvgFinishAtTrack TeamAvgFinishatTrackType
 

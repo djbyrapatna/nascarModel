@@ -2,11 +2,7 @@ import pandas as pd
 import numpy as np
 import pickle
 
-df = pd.read_excel("racingref/taggedData2.xlsx", sheet_name = None)
 
-years = df["Teams"]['Year'].unique()
-
-dfs_by_year = {year: df["Teams"][df["Teams"]['Year'] == year].reset_index(drop=True) for year in years}
 
 def add_teammates_column(df):
     grouped = df.groupby(['Year', 'Team'])['Driver'].apply(lambda x: ', '.join(x))
@@ -16,13 +12,22 @@ def add_teammates_column(df):
     df['Teammates'] = df.apply(lambda row: ', '.join([driver for driver in row['Teammates'].split(', ') if driver != row['Driver']]), axis=1)
     return df
 
-df['Teams'] = add_teammates_column(df['Teams'])
+def updateTaggedData(taggedDataFile, destFiles):
+        df = pd.read_excel(taggedDataFile, sheet_name = None)
 
-fileArr = ['racingref/trackDataTagged2.pkl', "racingref/teamDatatagged2.pkl"]
+        years = df["Teams"]['Year'].unique()
 
-with open(fileArr[0], 'wb') as f:
-        pickle.dump(df['Tracks'], f)
+        dfs_by_year = {year: df["Teams"][df["Teams"]['Year'] == year].reset_index(drop=True) for year in years}
 
-with open(fileArr[1], 'wb') as f:
-        pickle.dump(df['Teams'], f)
+        df['Teams'] = add_teammates_column(df['Teams'])
 
+        fileArr = destFiles
+        with open(fileArr[0], 'wb') as f:
+                pickle.dump(df['Tracks'], f)
+
+        with open(fileArr[1], 'wb') as f:
+                pickle.dump(df['Teams'], f)
+
+
+# updateTaggedData("racingref/taggedData2.xlsx",
+# ['racingref/trackDataTagged2.pkl', "racingref/teamDatatagged2.pkl"])
