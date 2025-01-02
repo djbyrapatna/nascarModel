@@ -7,11 +7,10 @@ from sklearn.linear_model import LinearRegression, Ridge
 import warnings
 warnings.filterwarnings("ignore")
 
-def cleanTotal(X, y):
-    columns_to_drop = X.filter(like='prac').columns
-
-    # Drop the selected columns
-    X = X.drop(columns=columns_to_drop)
+def cleanTotal(X, y, dropPractice=False):
+    if dropPractice:
+        columns_to_drop = X.filter(like='prac').columns
+        X = X.drop(columns=columns_to_drop)
     
     X = X.drop_duplicates()
 
@@ -22,6 +21,9 @@ def cleanTotal(X, y):
     
     X = X.iloc[:, :-6]
     X = X.drop(columns=['Yearrace', 'Yearloop', 'Yearqual'])
+    if not dropPractice:
+         X = X.drop(columns=['Yearprac'])
+
     X = X.drop(columns = ['Track',	'Type',	'Manufacturer'	,'Team',	'Teammates'])
     X = X.drop(columns=['Finish'])
     

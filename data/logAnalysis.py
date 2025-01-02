@@ -11,11 +11,11 @@ from sklearn.utils.class_weight import compute_class_weight
 import numpy as np
 import xgboost as xgb
 
-def logRegSplits(xFile, yFile,scale=None, clean=False):
+def logRegSplits(xFile, yFile,scale=None, clean=False,dropPractice=False):
     X, y = importXy(xFile, yFile)
     X.to_excel("compareX.xlsx")
     if clean:
-        X, y = cleanTotal(X,y)
+        X, y = cleanTotal(X,y, dropPractice=dropPractice)
     X.to_excel("checkCleanX.xlsx")
     y.to_excel("checkCleanY.xlsx")
     X_train, X_test, y_train, y_test = createTestTrain(X,y, scale = scale)
@@ -62,8 +62,8 @@ def logReg(X_train, X_test, y_train, y_test, model, metrics=False, probs=False):
         y_prob = model.predict_proba(X_test)
     return [testArr, y_prob, metArr]
 
-def logRegRun(xFile, yFile, cutOffArray, modelType='log', scale = None,polyModel = False, degree=2, colList = None, metrics=False, probs=False, clean=False):
-    X_train, X_test, y_train, y_test = logRegSplits(xFile, yFile,scale=scale, clean=clean)
+def logRegRun(xFile, yFile, cutOffArray, modelType='log', scale = None,polyModel = False, degree=2, colList = None, metrics=False, probs=False, clean=False, dropPractice=False):
+    X_train, X_test, y_train, y_test = logRegSplits(xFile, yFile,scale=scale, clean=clean, dropPractice=dropPractice)
     yArr = logRegSetup(y_train, y_test, cutOffArray)
     #print(len(yArr))
     retArr = []

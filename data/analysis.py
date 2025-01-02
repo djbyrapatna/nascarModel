@@ -56,7 +56,7 @@ for j in range(len(modelTypeAndScale)):
         if (a+1)%5==0:
             print("Iteration ", a+1)
         resultArr = logRegRun("racingref/formodel/compiledDataX.pkl", "racingref/formodel/compiledDataY.pkl",
-                        cutOffArray, modelType=m, scale = s,metrics=True, probs = True, clean=True)
+                        cutOffArray, modelType=m, scale = s,metrics=True, probs = True, clean=True, dropPractice=True)
         numCutoffs = len(resultArr)
         for i in range(len(resultArr)):
             result = resultArr[i]
