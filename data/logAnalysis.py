@@ -4,10 +4,12 @@ from linAnalysis import cleanTotal
 from polyAnalysis import createPolyX
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-from sklearn.preprocessing import LabelEncoder, PolynomialFeatures
+from sklearn.preprocessing import LabelEncoder, PolynomialFeatures, StandardScaler
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from sklearn.utils.class_weight import compute_class_weight
+from sklearn.impute import SimpleImputer
+from sklearn.pipeline import Pipeline
 import numpy as np
 import xgboost as xgb
 import joblib
@@ -78,10 +80,38 @@ def logReg(X_train, X_test, y_train, y_test, model, metrics=False, probs=False):
 #2. Select and set up appropriate model
 #3. Run model and return/save results for each cutoff in the cutoffArray
 def logRegRun(xFile, yFile, cutOffArray, modelType='log', scale = None,
-               colList = None, **kwargs):
+             **kwargs):
+    
+    """
+    Trains and evaluates models for each cutoff and model type, optionally saving the trained models.
+
+    Parameters:
+    - xFile (str): Path to the features data file.
+    - yFile (str): Path to the target data file.
+    - cutOffArray (list of int): List of cutoff values for label binarization.
+    - modelType (str, default='log'): Type of model to train ('log', 'randomforest', 'xgBoost', 'svm').
+    - scale (str or None, default=None): Scaling method ('zScale' for StandardScaler, etc.).
+    
+    - **kwargs: Additional keyword arguments:
+        - clean (bool, default=False): Whether to clean the data.
+        - dropPractice (bool, default=False): Whether to drop practice-related columns.
+        - metrics (bool, default=False): Whether to compute evaluation metrics.
+        - probs (bool, default=False): Whether to return probability predictions.
+        - saveModels (bool, default=False): Whether to save the trained models.
+        - modelDir (str, default='models'): Directory to save the models.
+        - degree (int, default=2): Degree for polynomial features if polyModel is True.
+        - colList (list of str or None, default=None): List of columns to use for polynomial features.
+
+    Returns:
+    - list: A list of results for each cutoff, where each result contains [testArr, y_prob, metArr].
+    """
+
     #Setup and process data
     kwargKeys = ['clean', 'dropPractice', 'metrics', 'probs', 'saveModels', 'polyModel']
     clean, dropPractice, metrics, probs, saveModels, polyModel = [kwargs.get(key, False) for key in kwargKeys]
+    degree = kwargs.get('degree', 2)
+    modelDir = kwargs.get('modelDir', 'models')
+    colList = kwargs.get('colList', None)
 
     X_train, X_test, y_train, y_test = logRegSplits(xFile, yFile,scale=scale, clean=clean, dropPractice=dropPractice)
     yArr = logRegSetup(y_train, y_test, cutOffArray)
@@ -90,24 +120,20 @@ def logRegRun(xFile, yFile, cutOffArray, modelType='log', scale = None,
     
     if saveModels:
         #ensure directory exists, create folder if necessary
-        modelDir = kwargs.get('modelDir', 'models')
         if not path.exists(modelDir):
             makedirs(modelDir)
 
     #choose model and set up addnl parameters as necessary
     svmFlag = False
-    model = LogisticRegression()
+    baseModel = LogisticRegression()
     if modelType=='randomforest':
-        model = RandomForestClassifier()
+        baseModel = RandomForestClassifier()
     elif modelType =='xgBoost':
-        model = xgb.XGBClassifier()
+        baseModel = xgb.XGBClassifier()
     elif modelType=='svm':
         svmFlag = True
 
     if polyModel:
-        degree = 2
-        if 'degree' in kwargs:
-            degree = kwargs.get('degree')
         a,b = filterXy([X_train, X_test], colList)
         X_train, X_test = createPolyX(X_train, X_test, degree=degree)
 
@@ -117,10 +143,33 @@ def logRegRun(xFile, yFile, cutOffArray, modelType='log', scale = None,
             class_weights = compute_class_weight('balanced', 
                 classes=np.unique(yArr[i][0].values.flatten()), y=yArr[i][0].values.flatten())
             class_weight_dict = {0: class_weights[0], 1: class_weights[1]}
-            model = SVC(kernel='rbf',class_weight=class_weight_dict,probability=True)
+            classifier = SVC(kernel='rbf',class_weight=class_weight_dict,probability=True)
+        else:
+            classifier=baseModel
 
-        ret = logReg(X_train, X_test, yArr[i][0], yArr[i][1], model, metrics=metrics, probs=probs)
-        retArr.append(ret)
+        
+
+        # Define preprocessing steps
+        preprocessingSteps = []
+        preprocessingSteps.append(('imputer', SimpleImputer(strategy='mean'))) # Impute missing values
+        if scale == 'zScale':
+            preprocessingSteps.append(('scaler', StandardScaler()))
+        else:
+            preprocessingSteps.append(('scaler', 'passthrough'))  # No scaling
+
+        # Add polynomial features if polyModel is True and colList is provided
+        if polyModel and colList is not None:
+            preprocessingSteps.append(('poly', PolynomialFeatures(degree=degree)))
+        else:
+            preprocessingSteps.append(('poly', 'passthrough'))  # No polynomial features
+
+        # Create the pipeline
+        pipeline = Pipeline(preprocessingSteps + [('classifier', classifier)])
+
+        # Train the pipeline
+        result = logReg(X_train, X_test, yArr[i][0], yArr[i][1], pipeline, metrics=metrics, probs=probs)
+        retArr.append(result)
+
 
         if saveModels:
             modelFilename = f"{modelType}_cutoff_{cutoff}.pkl"
