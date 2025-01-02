@@ -4,7 +4,7 @@ from linAnalysis import cleanTotal
 from polyAnalysis import createPolyX
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-from sklearn.preprocessing import LabelEncoder, PolynomialFeatures, StandardScaler
+from sklearn.preprocessing import LabelEncoder, PolynomialFeatures, StandardScaler, MinMaxScaler
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from sklearn.utils.class_weight import compute_class_weight
@@ -75,14 +75,7 @@ def logReg(X_train, X_test, y_train, y_test, model, metrics=False, probs=False):
         y_prob = model.predict_proba(X_test)
     return [testArr, y_prob, metArr]
 
-#Model pipeline
-#1. Create training and test data, and convert y data into position binary for evaluation
-#2. Select and set up appropriate model
-#3. Run model and return/save results for each cutoff in the cutoffArray
-def logRegRun(xFile, yFile, cutOffArray, modelType='log', scale = None,
-             **kwargs):
-    
-    """
+"""
     Trains and evaluates models for each cutoff and model type, optionally saving the trained models.
 
     Parameters:
@@ -104,8 +97,10 @@ def logRegRun(xFile, yFile, cutOffArray, modelType='log', scale = None,
 
     Returns:
     - list: A list of results for each cutoff, where each result contains [testArr, y_prob, metArr].
-    """
-
+"""
+def logRegRun(xFile, yFile, cutOffArray, modelType='log', scale = None,
+             **kwargs):
+    
     #Setup and process data
     kwargKeys = ['clean', 'dropPractice', 'metrics', 'probs', 'saveModels', 'polyModel']
     clean, dropPractice, metrics, probs, saveModels, polyModel = [kwargs.get(key, False) for key in kwargKeys]
@@ -113,7 +108,7 @@ def logRegRun(xFile, yFile, cutOffArray, modelType='log', scale = None,
     modelDir = kwargs.get('modelDir', 'models')
     colList = kwargs.get('colList', None)
 
-    X_train, X_test, y_train, y_test = logRegSplits(xFile, yFile,scale=scale, clean=clean, dropPractice=dropPractice)
+    X_train, X_test, y_train, y_test = logRegSplits(xFile, yFile,scale=None, clean=clean, dropPractice=dropPractice)
     yArr = logRegSetup(y_train, y_test, cutOffArray)
 
     retArr = []
@@ -133,9 +128,18 @@ def logRegRun(xFile, yFile, cutOffArray, modelType='log', scale = None,
     elif modelType=='svm':
         svmFlag = True
 
-    if polyModel:
-        a,b = filterXy([X_train, X_test], colList)
-        X_train, X_test = createPolyX(X_train, X_test, degree=degree)
+    # if polyModel:
+    #     a,b = filterXy([X_train, X_test], colList)
+    #     X_train, X_test = createPolyX(X_train, X_test, degree=degree)
+    if polyModel and colList is not None:
+        filteredData = filterXy([X_train, X_test], colList)
+        X_train_poly, X_test_poly = createPolyX(filteredData[0], filteredData[1], degree=degree)
+        # Convert numpy arrays back to DataFrames with appropriate indexing
+        X_train_poly = pd.DataFrame(X_train_poly, index=X_train.index)
+        X_test_poly = pd.DataFrame(X_test_poly, index=X_test.index)
+        # Concatenate polynomial features to the original data
+        X_train = pd.concat([X_train.reset_index(drop=True), X_train_poly.reset_index(drop=True)], axis=1)
+        X_test = pd.concat([X_test.reset_index(drop=True), X_test_poly.reset_index(drop=True)], axis=1)
 
     #run model for each cutoff in cutoffArray, append results
     for i, cutoff in enumerate(cutOffArray):
@@ -147,34 +151,28 @@ def logRegRun(xFile, yFile, cutOffArray, modelType='log', scale = None,
         else:
             classifier=baseModel
 
-        
-
         # Define preprocessing steps
-        preprocessingSteps = []
-        preprocessingSteps.append(('imputer', SimpleImputer(strategy='mean'))) # Impute missing values
+        preprocessingSteps = [
+            ('imputer', SimpleImputer(strategy='mean'))
+        ]
+        # Add scaling to the Pipeline if required
         if scale == 'zScale':
             preprocessingSteps.append(('scaler', StandardScaler()))
+        elif scale == 'minMaxScale':
+            preprocessingSteps.append(('scaler', MinMaxScaler()))
         else:
             preprocessingSteps.append(('scaler', 'passthrough'))  # No scaling
 
-        # Add polynomial features if polyModel is True and colList is provided
-        if polyModel and colList is not None:
-            preprocessingSteps.append(('poly', PolynomialFeatures(degree=degree)))
-        else:
-            preprocessingSteps.append(('poly', 'passthrough'))  # No polynomial features
-
-        # Create the pipeline
+        # Create the Pipeline with preprocessing and classifier
         pipeline = Pipeline(preprocessingSteps + [('classifier', classifier)])
-
         # Train the pipeline
         result = logReg(X_train, X_test, yArr[i][0], yArr[i][1], pipeline, metrics=metrics, probs=probs)
         retArr.append(result)
 
-
         if saveModels:
             modelFilename = f"{modelType}_cutoff_{cutoff}.pkl"
             modelPath = path.join(modelDir, modelFilename)
-            joblib.dump(model, modelPath)
+            joblib.dump(pipeline, modelPath)
             print(f"Saved model: {modelPath}")
 
     return retArr
