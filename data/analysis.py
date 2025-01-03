@@ -1,10 +1,10 @@
 import pandas as pd
 from sklearn.linear_model import LinearRegression, Ridge, LogisticRegression
-from polyAnalysis import polyRegRun, polyFeatureRanking
-from linAnalysis import linAnalysisRun, linFeatureRanking
-from logAnalysis import logRegRun
+from .polyAnalysis import polyRegRun, polyFeatureRanking
+from .linAnalysis import linAnalysisRun, linFeatureRanking
+from .logAnalysis import logRegRun
 from statistics import fmean
-from linExport import importXy
+from .linExport import importXy
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_colwidth', None)

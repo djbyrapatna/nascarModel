@@ -1,5 +1,5 @@
 import pandas as pd
-from linExport import createTestTrain, importXy
+from .linExport import createTestTrain, importXy
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.linear_model import LinearRegression, Ridge

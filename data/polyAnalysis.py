@@ -1,6 +1,6 @@
 import pandas as pd
-from linExport import createTestTrain, importXy, filterXy
-from linAnalysis import linReg, cleanTotal
+from .linExport import createTestTrain, importXy, filterXy
+from .linAnalysis import linReg, cleanTotal
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression, Ridge

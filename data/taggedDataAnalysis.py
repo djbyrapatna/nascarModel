@@ -2,8 +2,8 @@ import pickle
 import pandas as pd
 import numpy as np
 from statistics import fmean
-from historicAnalysis import dataForRace
-from linRegModelSetup import createRaceKeyArray
+from .historicAnalysis import dataForRace
+from .linRegModelSetup import createRaceKeyArray
 #Have tagged data for 1. track and track type
 #2. Teammates and manufacturers
 #Let's see what we have so far first

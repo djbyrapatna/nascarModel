@@ -1,8 +1,8 @@
 import numpy as np 
 import pickle
 #import matplotlib.pyplot as plt
-from historicAnalysis import dataForRace
-from basicAnalysisLoop import loopDataforRace
+from .historicAnalysis import dataForRace
+from .basicAnalysisLoop import loopDataforRace
 import pandas as pd
 import warnings
 warnings.filterwarnings("ignore")

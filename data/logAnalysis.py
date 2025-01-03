@@ -1,7 +1,7 @@
 import pandas as pd
-from linExport import createTestTrain, importXy, filterXy
-from linAnalysis import cleanTotal
-from polyAnalysis import createPolyX
+from .linExport import createTestTrain, importXy, filterXy
+from .linAnalysis import cleanTotal
+from .polyAnalysis import createPolyX
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from sklearn.preprocessing import LabelEncoder, PolynomialFeatures, StandardScaler, MinMaxScaler
@@ -129,18 +129,7 @@ def logRegRun(xFile, yFile, cutOffArray, modelType='log', scale = None,
     elif modelType=='svm':
         svmFlag = True
 
-    # if polyModel:
-    #     a,b = filterXy([X_train, X_test], colList)
-    #     X_train, X_test = createPolyX(X_train, X_test, degree=degree)
-    # if polyModel and colList is not None:
-    #     filteredData = filterXy([X_train, X_test], colList)
-    #     X_train_poly, X_test_poly = createPolyX(filteredData[0], filteredData[1], degree=degree)
-    #     # Convert numpy arrays back to DataFrames with appropriate indexing
-    #     X_train_poly = pd.DataFrame(X_train_poly, index=X_train.index)
-    #     X_test_poly = pd.DataFrame(X_test_poly, index=X_test.index)
-    #     # Concatenate polynomial features to the original data
-    #     X_train = pd.concat([X_train.reset_index(drop=True), X_train_poly.reset_index(drop=True)], axis=1)
-    #     X_test = pd.concat([X_test.reset_index(drop=True), X_test_poly.reset_index(drop=True)], axis=1)
+   
     if polyModel and colList is not None:
     # Create a transformer that applies PolynomialFeatures to specified columns
         polyTransformer = ColumnTransformer(
