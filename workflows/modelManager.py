@@ -2,10 +2,31 @@ import joblib
 import pandas as pd
 import os
 import pickle
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+
+def dropDisruptiveColumns(X, dropPractice=True):
+    if dropPractice:
+        columns_to_drop = X.filter(like='prac').columns
+        X = X.drop(columns=columns_to_drop)
+    #print("X1",X.shape)
+    X = X.drop_duplicates()
+    #print("X2",X.shape)
+    
+    #print("X3",X.shape)
+    X = X.iloc[:, :-6]
+    X = X.drop(columns=['Yearrace', 'Yearloop', 'Yearqual'])
+    if not dropPractice:
+         X = X.drop(columns=['Yearprac'])
+
+    X = X.drop(columns = ['Track',	'Type',	'Manufacturer'	,'Team',	'Teammates'])
+    X = X.drop(columns=['Finish'])
+    #print("X4",X.shape)
+    return X
 
 
 class ModelManager:
-    def __init__(self, xFile, yFile, modelDir='../data/savedModels'):
+    def __init__(self, xFile, yFile, modelDir='workflows/models/'):
         """
         Initializes the ModelManager by loading the dataset and preparing it for queries.
 
@@ -61,6 +82,47 @@ class ModelManager:
         pipeline = joblib.load(modelPath)
         return pipeline
     
+    def getExpectedFeatures(self, pipeline):
+        """
+        Extracts the list of expected feature names from the pipeline's ColumnTransformer.
+
+        Parameters:
+        - pipeline (Pipeline): The loaded Scikit-learn Pipeline.
+
+        Returns:
+        - list of str: The list of feature names expected by the pipeline.
+        """
+        expectedFeatures = []
+        
+        # Identify the ColumnTransformer step. Assuming it's named 'poly' based on your logRegRun function.
+        # Adjust the name if it's different.
+        if 'poly' in pipeline.named_steps:
+            columnTransformer = pipeline.named_steps['poly']
+        elif 'preprocessor' in pipeline.named_steps:
+            columnTransformer = pipeline.named_steps['preprocessor']
+        else:
+            raise ValueError("ColumnTransformer step not found in the pipeline. Please check the pipeline's structure.")
+        
+        # Iterate through all transformers in the ColumnTransformer
+        for name, transformer, columns in columnTransformer.transformers_:
+            if isinstance(transformer, Pipeline):
+                # If the transformer is a Pipeline, iterate through its steps
+                for step_name, step in transformer.steps:
+                    if hasattr(step, 'get_feature_names_out'):
+                        transformedFeatures = step.get_feature_names_out(columns)
+                        expectedFeatures.extend(transformedFeatures)
+                    else:
+                        expectedFeatures.extend(columns)
+            else:
+                # If the transformer is not a Pipeline, directly check for feature names
+                if hasattr(transformer, 'get_feature_names_out'):
+                    transformedFeatures = transformer.get_feature_names_out(columns)
+                    expectedFeatures.extend(transformedFeatures)
+                else:
+                    expectedFeatures.extend(columns)
+        
+        return expectedFeatures
+    
     def predictProbability(self, key, modelDesc, cutoff):
         """
         Predicts the probability that the result associated with the given key is within the cutoff limit.
@@ -77,6 +139,7 @@ class ModelManager:
             raise ValueError(f"No data found for key: '{key}'. Please check the key and try again.")
         
         row = self.X_full.loc[[key]]  
+        #print("Row",row.shape)
         hasBlankColumns = row.isnull().any(axis=1).iloc[0]
         
         try:
@@ -84,9 +147,10 @@ class ModelManager:
         except FileNotFoundError as e:
             raise FileNotFoundError(f"Failed to load model for key '{key}': {e}")
         
-        # Predict the probability
+        rowFiltered = dropDisruptiveColumns(row, dropPractice=hasBlankColumns)
+        #print("rf",rowFiltered.shape)
         try:
-            prob = pipeline.predict_proba(row)[0][1]  # Probability of class 1
+            prob = pipeline.predict_proba(rowFiltered)[0][1]  # Probability of class 1
         except Exception as e:
             raise RuntimeError(f"Error during prediction for key '{key}': {e}")
         
