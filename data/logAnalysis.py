@@ -182,7 +182,10 @@ def logRegRun(xFile, yFile, cutOffArray, modelType='log', scale = None,
         retArr.append(result)
 
         if saveModels:
-            modelFilename = f"{modelType}_cutoff_{cutoff}.pkl"
+            if not dropPractice:
+                modelFilename = f"{modelType}_cutoff_{cutoff}.pkl"
+            else:
+                modelFilename = f"{modelType}_no_prac_cutoff_{cutoff}.pkl"
             modelPath = path.join(modelDir, modelFilename)
             joblib.dump(pipeline, modelPath)
             print(f"Saved model: {modelPath}")

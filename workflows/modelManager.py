@@ -1,7 +1,8 @@
 import joblib
 import pandas as pd
 import os
-from data import linExport as le
+import pickle
+
 
 class ModelManager:
     def __init__(self, xFile, yFile, modelDir='../data/savedModels'):
@@ -23,7 +24,9 @@ class ModelManager:
         """
         Loads the dataset into memory.
         """
-        self.X_full, self.y_full = le.importXy(self.xFile, self.yFile)
+        with open(self.xFile,'rb') as f:
+            self.X_full = pickle.load(f)
+       
         # Assuming 'Driver' column contains keys in the format 'DriverName_RaceNumber_Year'
         self.X_full.set_index('Driver', inplace=True)
     
@@ -35,18 +38,21 @@ class ModelManager:
         if 'Driver' not in self.X_full.index.names:
             self.X_full.set_index('Driver', inplace=True)
     
-    def loadModel(self, modelType, cutoff):
+    def loadModel(self, modelDesc, cutoff, noPrac):
         """
         Loads a trained model from disk.
 
         Parameters:
-        - modelType (str): Type of the model ('log', 'randomforest', 'xgBoost', 'svm').
+        - modelDesc (str): Unioque model identifier (e.g.) ('log', 'log_no_prac','randomforest', 'xgBoost', 'svm').
         - cutoff (int): The cutoff value.
 
         Returns:
         - Pipeline: The loaded Scikit-learn Pipeline model.
         """
-        modelFilename = f"{modelType}_cutoff_{cutoff}.pkl"
+        if noPrac:
+            modelFilename = f"{modelDesc}_no_prac_cutoff_{cutoff}.pkl"
+        else:
+            modelFilename = f"{modelDesc}_cutoff_{cutoff}.pkl"
         modelPath = os.path.join(self.modelDir, modelFilename)
         
         if not os.path.exists(modelPath):
@@ -55,7 +61,7 @@ class ModelManager:
         pipeline = joblib.load(modelPath)
         return pipeline
     
-    def predictProbability(self, key, modelType, cutoff):
+    def predictProbability(self, key, modelDesc, cutoff):
         """
         Predicts the probability that the result associated with the given key is within the cutoff limit.
 
@@ -67,20 +73,22 @@ class ModelManager:
         Returns:
         - float: Probability that the result is within the cutoff limit.
         """
-        # Load the model
-        pipeline = self.loadModel(modelType, cutoff)
-        
-        # Retrieve the row corresponding to the key
         if key not in self.X_full.index:
             raise ValueError(f"No data found for key: '{key}'. Please check the key and try again.")
         
-        row = self.X_full.loc[[key]]  # Keep it as DataFrame
+        row = self.X_full.loc[[key]]  
+        hasBlankColumns = row.isnull().any(axis=1).iloc[0]
+        
+        try:
+            pipeline = self.loadModel(modelDesc, cutoff, noPrac=hasBlankColumns)
+        except FileNotFoundError as e:
+            raise FileNotFoundError(f"Failed to load model for key '{key}': {e}")
         
         # Predict the probability
         try:
             prob = pipeline.predict_proba(row)[0][1]  # Probability of class 1
         except Exception as e:
-            raise RuntimeError(f"Error during prediction: {e}")
+            raise RuntimeError(f"Error during prediction for key '{key}': {e}")
         
         return prob
     
@@ -97,12 +105,12 @@ class ModelManager:
         - dict: Nested dictionary with model types and cutoffs mapping to predicted probabilities.
         """
         results = {}
-        for modelType in modelTypes:
-            results[modelType] = {}
+        for modelDesc in modelTypes:
+            results[modelDesc] = {}
             for cutoff in cutoffs:
                 try:
-                    prob = self.predictProbability(key, modelType, cutoff)
-                    results[modelType][cutoff] = prob
+                    prob = self.predictProbability(key, modelDesc, cutoff)
+                    results[modelDesc][cutoff] = prob
                 except Exception as e:
-                    results[modelType][cutoff] = str(e)
+                    results[modelDesc][cutoff] = str(e)
         return results
