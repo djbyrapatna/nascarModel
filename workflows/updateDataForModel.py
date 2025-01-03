@@ -5,6 +5,7 @@ from os import makedirs
 from os.path import dirname
 import pandas as pd
 
+
 currentUnprocessedDataFiles = ["data/racingref/ldatatotal.pkl",
          "data/racingref/pdatatotal.pkl",
          "data/racingref/qdatatotal.pkl"
