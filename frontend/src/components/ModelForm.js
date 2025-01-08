@@ -1,7 +1,5 @@
-// ModelForm.js
 import React, { useState } from 'react';
 import axios from 'axios';
-
 
 const ModelForm = ({ onResult }) => {
   const [formData, setFormData] = useState({
@@ -12,15 +10,42 @@ const ModelForm = ({ onResult }) => {
     cutoff: ''
   });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+  console.log('API_BASE_URL:', API_BASE_URL); // Debugging log
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    // Basic validation
+    if (!formData.driverName.trim()) {
+      setError('Driver Name is required.');
+      return;
+    }
+    if (isNaN(formData.raceNumber) || formData.raceNumber <= 0) {
+      setError('Race Number must be a positive number.');
+      return;
+    }
+    if (isNaN(formData.year) || formData.year < 1900 || formData.year > new Date().getFullYear()) {
+      setError('Enter a valid Year.');
+      return;
+    }
+    if (!formData.modelDesc.trim()) {
+      setError('Model Description is required.');
+      return;
+    }
+    if (isNaN(formData.cutoff) || formData.cutoff <= 0) {
+      setError('Cutoff must be a positive number.');
+      return;
+    }
+
+    setLoading(true);
     try {
       const response = await axios.post(`${API_BASE_URL}/query`, formData);
       onResult(response.data);
@@ -31,6 +56,7 @@ const ModelForm = ({ onResult }) => {
         setError('An unexpected error occurred.');
       }
     }
+    setLoading(false);
   };
 
   return (
@@ -49,14 +75,20 @@ const ModelForm = ({ onResult }) => {
       </div>
       <div>
         <label>Model Description:</label>
-        <input type="text" name="modelDesc" value={formData.modelDesc} onChange={handleChange} required />
+        <select name="modelDesc" value={formData.modelDesc} onChange={handleChange} required>
+          <option value="">Select a Model</option>
+          <option value="log">Logistic Regression</option>
+          <option value="randomforest">Random Forest</option>
+          <option value="xgBoost">XGBoost</option>
+          <option value="svm">Support Vector Machine</option>
+        </select>
       </div>
       <div>
         <label>Cutoff:</label>
         <input type="number" name="cutoff" value={formData.cutoff} onChange={handleChange} required />
       </div>
       {error && <p className="error">{error}</p>}
-      <button type="submit">Predict Probability</button>
+      {loading ? <p>Loading...</p> : <button type="submit">Predict Probability</button>}
     </form>
   );
 };
