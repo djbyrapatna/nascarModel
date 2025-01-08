@@ -1,12 +1,19 @@
 // src/App.js
-import React from 'react';
+import React, { useState } from 'react';
+import Header from './components/Header';
+import ModelForm from './components/ModelForm';
+import ResultDisplay from './components/ResultDisplay';
 
-function App() {
+const App = () => {
+  const [result, setResult] = useState(null);
+
   return (
-    <div>
-      <h1>NASCAR Model Frontend</h1>
+    <div className="App">
+      <Header />
+      <ModelForm onResult={setResult} />
+      {result && <ResultDisplay result={result} />}
     </div>
   );
-}
+};
 
 export default App;

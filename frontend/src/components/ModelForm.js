@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
+
 const ModelForm = ({ onResult }) => {
   const [formData, setFormData] = useState({
     driverName: '',
@@ -15,12 +16,13 @@ const ModelForm = ({ onResult }) => {
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     try {
-      const response = await axios.post(`${process.env.REACT_APP_API_BASE_URL}/query`, formData);
+      const response = await axios.post(`${API_BASE_URL}/query`, formData);
       onResult(response.data);
     } catch (err) {
       if (err.response && err.response.data && err.response.data.error) {
