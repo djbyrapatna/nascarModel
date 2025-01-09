@@ -13,7 +13,7 @@ const ResultDisplay = ({ result, driverName, cutoff }) => {
       <h2>
         The probability that {driverName} finishes in the top {cutoff} is
       </h2>
-      <p>Probability: {probabilityPercentage}%</p>
+      <p>{probabilityPercentage}%</p>
     </div>
   );
 };
