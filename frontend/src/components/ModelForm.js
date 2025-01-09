@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
-const ModelForm = ({ onResult }) => {
-  const [formData, setFormData] = useState({
-    driverName: 'Chase Elliott',
-    raceNumber: 20,
-    year: 2024,
-    modelDesc: '',
-    cutoff: ''
-  });
+const ModelForm = ({ onResult, formData, setFormData }) => {
+//   const [formData, setFormData] = useState({
+//     driverName: 'Chase Elliott',
+//     raceNumber: 20,
+//     year: 2024,
+//     modelDesc: '',
+//     cutoff: ''
+//   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -16,7 +16,11 @@ const ModelForm = ({ onResult }) => {
   console.log('API_BASE_URL:', API_BASE_URL); // Debugging log
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value
+    });
   };
 
   const handleSubmit = async (e) => {

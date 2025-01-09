@@ -7,12 +7,25 @@ import './App.css';
 
 const App = () => {
   const [result, setResult] = useState(null);
+  const [formData, setFormData] = useState({
+    driverName: 'Chase Elliott',
+    raceNumber: '20',
+    year: '2024',
+    modelDesc: '',
+    cutoff: ''
+  });
 
   return (
     <div className="App">
       <Header />
-      <ModelForm onResult={setResult} />
-      {result && <ResultDisplay result={result} />}
+      <ModelForm onResult={setResult} formData={formData} setFormData={setFormData} />
+      {result && (
+        <ResultDisplay
+          result={result}
+          driverName={formData.driverName}
+          cutoff={formData.cutoff}
+        />
+      )}
     </div>
   );
 };

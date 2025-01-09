@@ -1,15 +1,19 @@
 // ResultDisplay.js
 import React from 'react';
 
-const ResultDisplay = ({ result }) => {
+const ResultDisplay = ({ result, driverName, cutoff }) => {
   if (result.error) {
     return <div className="error">Error: {result.error}</div>;
   }
 
+  const probabilityPercentage = (result.probability * 100).toFixed(1);
+
   return (
     <div className="result">
-      <h2>Prediction Result</h2>
-      <p>Probability: {result.probability}</p>
+      <h2>
+        The probability that {driverName} finishes in the top {cutoff} is
+      </h2>
+      <p>Probability: {probabilityPercentage}%</p>
     </div>
   );
 };
