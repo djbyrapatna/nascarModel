@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import Header from './components/Header';
 import ModelForm from './components/ModelForm';
 import ResultDisplay from './components/ResultDisplay';
+import './App.css'; 
 
 const App = () => {
   const [result, setResult] = useState(null);
