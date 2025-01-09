@@ -3,9 +3,9 @@ import axios from 'axios';
 
 const ModelForm = ({ onResult }) => {
   const [formData, setFormData] = useState({
-    driverName: '',
-    raceNumber: '',
-    year: '',
+    driverName: 'Chase Elliott',
+    raceNumber: 20,
+    year: 2024,
     modelDesc: '',
     cutoff: ''
   });
@@ -84,8 +84,15 @@ const ModelForm = ({ onResult }) => {
         </select>
       </div>
       <div>
-        <label>Cutoff:</label>
-        <input type="number" name="cutoff" value={formData.cutoff} onChange={handleChange} required />
+        <label>Finishing Position:</label>
+        <select name="cutoff" type="number" value={formData.cutoff} onChange={handleChange} required >
+          <option value="">Select a Finishing Position</option>
+          <option value="1">1</option>
+          <option value="3">3</option>
+          <option value="5">5</option>
+          <option value="10">10</option>
+          <option value="20">20</option>
+        </select>
       </div>
       {error && <p className="error">{error}</p>}
       {loading ? <p>Loading...</p> : <button type="submit">Predict Probability</button>}
