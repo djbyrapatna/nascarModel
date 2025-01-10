@@ -11,79 +11,187 @@ import pandas as pd
 from statistics import fmean
 
 def dataForRace(fileName, posKey, race, yr, includeCurr):
-    raceKey = race*100 +(yr%100)
+    # Define constants
+    RACES_PER_SEASON = 36
+    EARLIEST_YEAR = 2021
+
+    # Find key corresponding to this specific race
+    raceKey = race * 100 + (yr % 100)
+    
+    # Load data file
     with open(fileName, 'rb') as f:
         dfRace = pickle.load(f)
-    f.close()
-    #print(dfRace.keys())
+    
+    # Get the list of drivers to calculate data for this particular race
     driverList = dfRace[raceKey]['Driver']
+    
+    # Define DataFrame columns based on whether to include current finish
     if includeCurr:
         avgFinishes = pd.DataFrame(columns=["Driver", "Year", "Curr", "Prev", 
                                             "Prev3", "Prev5", "Prev10", "PrevAll"])
     else:
-        avgFinishes = pd.DataFrame(columns=["Driver", "Year","Prev", 
+        avgFinishes = pd.DataFrame(columns=["Driver", "Year", "Prev", 
                                             "Prev3", "Prev5", "Prev10", "PrevAll"])
     
     for driver in driverList:
         finishes = []
+        finishes_current_year = []
         curr = 0
-        startRange = race
+        currentRace = race
+        currentYear = yr
+        
+        # Adjust the starting race based on includeCurr
         if not includeCurr:
-            startRange -=1
-        #loop thru races in data set
-        for i in range(startRange,0,-1):
-            #get specific dataframe corresponding to race
-            key = i*100 +(yr%100)
-            d = dfRace[key]
+            currentRace -= 1
+        
+        racesCollected = 0
+        DESIRED_RACES = 10  # Number of previous races required
+        
+        while racesCollected < DESIRED_RACES:
+            # Check if we've gone before the earliest year
+            if currentYear < EARLIEST_YEAR:
+                break  # Not enough races in the dataset
             
-
-            #find row of data corresponding to driver
-            if not d.empty:
-                rowDf = d[d['Driver'] == driver]
-            #if row exists, append finishes array
+            # If race number is less than 1, wrap to the last race of the previous year
+            if currentRace < 1:
+                currentYear -= 1
+                if currentYear < EARLIEST_YEAR:
+                    break  # Prevent going before the earliest year
+                currentRace = RACES_PER_SEASON
+            key = currentRace * 100 + (currentYear % 100)
+            
+            # Retrieve race data if the key exists
+            d = dfRace.get(key, pd.DataFrame())
+            
+            # Find row of data corresponding to driver
+            rowDf = d[d['Driver'] == driver]
             if rowDf.empty and isinstance(driver, str):
-                driverSpace = "  "+driver
+                driverSpace = "  " + driver
                 rowDf = d[d['Driver'] == driverSpace]
-            if not rowDf.empty:
-                if i == race:
-                    curr = rowDf[posKey].tolist()[0]   
-                else:
-                    finishes.append(rowDf[posKey].tolist()[0])
-    
-        numRaces = len(finishes)
-        # if isinstance(driver, str):
-            #print(driver, len(driver))
-        #calculate and append the previous finish, the average finish over the last 3, 5, 10, and total season races
-  
-        if numRaces>=10:
-            dfAdd = [driver,yr]
-            if includeCurr:
-                #print("here?")
-                dfAdd.append(curr)
-            #print (finishes)
-            #if numRaces>0:
-            dfAdd.append(finishes[0])
-            #if numRaces >=3:
-            prev3 = fmean(finishes[0:3])
-            dfAdd.append(prev3)
-            # else:
-            #     dfAdd.append(-1)
-            #if numRaces >=5:
-            prev5 = fmean(finishes[0:5])
-            dfAdd.append(prev5)
-            # else:
-            #     dfAdd.append(-1)
-            #if numRaces >=10:
-            prev10 = fmean(finishes[0:10])
-            dfAdd.append(prev10)
-            # else:
-            #     dfAdd.append(-1)
-            dfAdd.append(fmean(finishes))
-
-            avgFinishes.loc[len(avgFinishes)] = dfAdd
             
+            # If row exists, process the finish position
+            if not rowDf.empty:
+                finish_position = rowDf[posKey].tolist()[0]
+                if currentRace == race and currentYear == yr and includeCurr:
+                    curr = finish_position
+                    finishes_current_year.append(curr)
+                else:
+                    finishes.append(finish_position)
+                    if currentYear == yr:
+                        finishes_current_year.append(finish_position)
+                    racesCollected += 1  # Increment only when a finish is added
+            
+            # Move to the previous race
+            currentRace -= 1
+        
+        # After collecting finishes, check if we have enough data
+        if racesCollected >= DESIRED_RACES:
+            dfAdd = [driver, yr]
+            if includeCurr:
+                dfAdd.append(curr)
+            
+            # Previous finish (most recent finish before current race)
+            
+            dfAdd.append(finishes[0])
+            
+            # Calculate averages
+            prev3 = fmean(finishes[:3]) if len(finishes) >= 3 else fmean(finishes)
+            prev5 = fmean(finishes[:5]) if len(finishes) >= 5 else fmean(finishes)
+            prev10 = fmean(finishes[:10]) if len(finishes) >= 10 else fmean(finishes)
+            
+            dfAdd.append(prev3)
+            dfAdd.append(prev5)
+            dfAdd.append(prev10)
+            
+            # Calculate PrevAll (average of collected finishes in the current year)
+            dfAdd.append(fmean(finishes_current_year) if finishes_current_year else None)
+            
+            # Append the data to the DataFrame
+            avgFinishes.loc[len(avgFinishes)] = dfAdd
     
     return avgFinishes
+
+
+
+
+
+
+
+# import pickle
+# import pandas as pd
+# from statistics import fmean
+
+# def dataForRace(fileName, posKey, race, yr, includeCurr):
+#     #find key corresponding to this specific race
+#     raceKey = race*100 +(yr%100)
+#     #load data file
+#     with open(fileName, 'rb') as f:
+#         dfRace = pickle.load(f)
+#     f.close()
+#     minKey = min(dfRace.keys())
+#     #get the list of drivers to calc data for this particular race
+#     driverList = dfRace[raceKey]['Driver']
+#     if includeCurr:
+#         avgFinishes = pd.DataFrame(columns=["Driver", "Year", "Curr", "Prev", 
+#                                             "Prev3", "Prev5", "Prev10", "PrevAll"])
+#     else:
+#         avgFinishes = pd.DataFrame(columns=["Driver", "Year","Prev", 
+#                                             "Prev3", "Prev5", "Prev10", "PrevAll"])
+    
+#     for driver in driverList:
+#         finishes = []
+#         curr = 0
+#         startRange = race
+#         if not includeCurr:
+#             startRange -=1
+#         #loop thru races in data set
+#         for i in range(startRange,0,-1):
+#             #get specific dataframe corresponding to race
+#             key = i*100 +(yr%100)
+#             d = dfRace[key]
+            
+
+#             #find row of data corresponding to driver
+#             if not d.empty:
+#                 rowDf = d[d['Driver'] == driver]
+#             #if row exists, append finishes array
+#             if rowDf.empty and isinstance(driver, str):
+#                 driverSpace = "  "+driver
+#                 rowDf = d[d['Driver'] == driverSpace]
+#             if not rowDf.empty:
+#                 if i == race:
+#                     curr = rowDf[posKey].tolist()[0]   
+#                 else:
+#                     finishes.append(rowDf[posKey].tolist()[0])
+    
+#         numRaces = len(finishes)
+        
+#         #calculate and append the previous finish, the average finish over the last 3, 5, 10, and total season races
+#         if numRaces>=10:
+#             dfAdd = [driver,yr]
+#             if includeCurr:
+                
+#                 dfAdd.append(curr)
+            
+#             dfAdd.append(finishes[0])
+            
+#             prev3 = fmean(finishes[0:3])
+#             dfAdd.append(prev3)
+            
+            
+#             prev5 = fmean(finishes[0:5])
+#             dfAdd.append(prev5)
+            
+            
+#             prev10 = fmean(finishes[0:10])
+#             dfAdd.append(prev10)
+            
+#             dfAdd.append(fmean(finishes))
+
+#             avgFinishes.loc[len(avgFinishes)] = dfAdd
+            
+    
+#     return avgFinishes
 
 def createSeasonData(fileName, posKey):
     with open(fileName, 'rb') as f:
@@ -115,33 +223,3 @@ def createSeasonData(fileName, posKey):
 
 fileArr = ["racingref/rdatatotal.pkl","racingref/pdatatotal.pkl","racingref/qdatatotal.pkl"]
 posArr = ["Pos", "Rank", "Rank"]
-
-# for i in range(len(fileArr)):
-#     df = createSeasonData(fileArr[i], posArr[i])
-#     pklFile = 'racingref/'+fileArr[i][10:15]+'seasonAvg.pkl'
-#     with open(pklFile, 'wb') as f:
-#         pickle.dump(df, f)
-
-# file = "racingref/ldatatotal.pkl"
-# with open(file, 'rb') as f:
-#     dfLoop = pickle.load(f)
-# posArr = dfLoop[124].columns[6:]
-# cols = ["Driver", "Year"] + list(posArr)
-
-# dfOut = pd.DataFrame(columns=cols)
-# dfStart = createSeasonData(file,cols[2])
-# print (cols)
-# dfOut['Driver'] = dfStart['Driver']
-# dfOut['Year'] = dfStart['Year']
-# dfOut[cols[2]] = dfStart[cols[2]]
-# for col in cols[3:]:
-#     print(col)
-#     dfStart = createSeasonData(file,col)
-#     dfOut[col] = dfStart[col]
-# dfOut.columns = [col.replace(' ', '').replace('.', '') for col in dfOut.columns]
-# print (dfOut.columns)
-
-# pklFile = 'racingref/ldataseasonAvg.pkl'
-# with open(pklFile, 'wb') as f:
-#     pickle.dump(dfOut, f)
-
